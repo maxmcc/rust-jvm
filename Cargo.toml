@@ -1,6 +1,11 @@
 [package]
 name = "rust-jvm"
 version = "0.1.0"
-authors = ["max mccarthy <maxmcc@seas.upenn.edu>"]
+authors = [
+  "Meyer Kizner <mkizner@seas.upenn.edu>",
+  "Max McCarthy <maxmcc@seas.upenn.edu>",
+  "David Xu <davix@seas.upenn.edu>"
+]
+documentation = "https://maxmcc.github.io/rust-jvm"
 
 [dependencies]
