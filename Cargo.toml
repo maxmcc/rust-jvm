@@ -1,0 +1,6 @@
+[package]
+name = "rust-jvm"
+version = "0.1.0"
+authors = ["max mccarthy <maxmcc@seas.upenn.edu>"]
+
+[dependencies]
