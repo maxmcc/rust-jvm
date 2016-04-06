@@ -2,3 +2,4 @@
 
 //! This is a documentation comment for our library.
 
+pub mod model;
