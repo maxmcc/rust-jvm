@@ -10,3 +10,4 @@ documentation = "https://maxmcc.github.io/rust-jvm"
 
 [dependencies]
 log = "*"
+nom = "^1.2.2"
