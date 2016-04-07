@@ -1,4 +1,4 @@
-# rust-jvm
+# rust-jvm [![Build Status](https://travis-ci.org/maxmcc/rust-jvm.svg?branch=master)](https://travis-ci.org/maxmcc/rust-jvm)
 CIS 198 Final Project
 Meyer Kizner, Max McCarthy, David Xu
 
