@@ -7,7 +7,7 @@ use model::class_file::ClassFile;
 use model::class_file::constant_pool;
 use model::class_file::constant_pool::ConstantPoolInfo;
 
-pub type ParseResult<I, O> = nom::IResult<I, O, Error>;
+pub type ParseResult<I, O> = Result<nom::IResult<I, O, Error>, nom::Err<I, Error>>;
 
 #[derive(Debug)]
 pub enum Error {
@@ -24,28 +24,34 @@ macro_rules! p {
     ($i: expr, $($args: tt)*) => (fix_error!($i, Error, $($args)*));
 }
 
+macro_rules! p_cut {
+    ($i: expr, $err: expr, $($args: tt)*) => (cut!($i, ErrorKind::Custom($err), $($args)*));
+    ($i: expr, $err: expr, $f: expr) => (cut!($i, $err, call!($f)));
+}
+
 macro_rules! p_fail {
-    ($e: expr) => ({
-        return $crate::nom::IResult::Error($crate::nom::Err::Code(ErrorKind::Custom($e)))
-    })
+    ($e: expr) => (return Err($crate::nom::Err::Code(ErrorKind::Custom($e))));
 }
 
-macro_rules! my_error {
-    ($i: expr, $e: expr, $($args: tt)*) => (error!($i, ErrorKind::Custom($e), $($args)*))
+macro_rules! p_wrap {
+  ($i: expr, $submac: ident ! ( $($args: tt)* )) => (Ok($submac!($i, $($args)*)));
+  ($i: expr, $f: expr) => (Ok(call!($i, $f)));
 }
 
-named!(magic<&[u8], &[u8], Error>, my_error!(Error::Magic, fix_error!(Error, tag!(&[0xCA, 0xFE, 0xBA, 0xBE]))));
+macro_rules! p_add_error {
+    ($i: expr, $e: expr, $($args: tt)*) => (add_error!($i, ErrorKind::Custom($e), $($args)*))
+}
 
-named!(cp_info_tag<&[u8], constant_pool::Tag, Error>, chain!(
+n!(magic<&[u8], &[u8], Error>, p_cut!(Error::Magic, p!(tag!(&[0xCA, 0xFE, 0xBA, 0xBE]))));
+
+n!(cp_info_tag<&[u8], constant_pool::Tag, Error>, chain!(
     tag: p!(be_u8),
     || constant_pool::Tag::from(tag)));
 
-named!(cp_index<&[u8], u16, Error>, p!(be_u16));
+n!(cp_index<&[u8], u16, Error>, p!(be_u16));
 
 macro_rules! satisfy (
     ($i: expr, $f: expr, $e: expr) => ({
-        use nom::HexDisplay;
-        println!("{}", $i.to_hex(8));
       let res: $crate::nom::IResult<_, _, _> = if $i.len() == 0 {
           $crate::nom::IResult::Incomplete($crate::nom::Needed::Size(1))
       } else {
@@ -61,13 +67,13 @@ macro_rules! satisfy (
   );
 );
 
-named!(modified_utf8<&[u8], u8, Error>, satisfy!(
+n!(modified_utf8<&[u8], u8, Error>, satisfy!(
     |b| [0x00, 0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd,
          0xfe, 0xff].contains(&b),
     |b| Error::IllegalModifiedUtf8 { byte: b }));
 
 macro_rules! take_modified_utf8 {
-    ($i: expr, $n: expr) => (my_error!($i, Error::ModifiedUtf8, count!(modified_utf8, $n)))
+    ($i: expr, $n: expr) => (p_cut!($i, Error::ModifiedUtf8, count!(c!(modified_utf8), $n)))
 }
 
 static mut cp_info_count: usize = 0;
@@ -76,35 +82,35 @@ fn cp_info_info(input: &[u8], tag: constant_pool::Tag) -> ParseResult<&[u8], Con
         cp_info_count += 1;
         println!("processing cp info #{}", cp_info_count);
     }
-    match tag {
-        constant_pool::Tag::Class => map!(input, cp_index,
+    let r = match tag {
+        constant_pool::Tag::Class => map!(input, c!(cp_index),
                                           |ci| ConstantPoolInfo::Class { name_index: ci }),
 
         constant_pool::Tag::FieldRef => chain!(input,
-                                               ci: cp_index ~
-                                               nti: cp_index,
+                                               ci: c!(cp_index) ~
+                                               nti: c!(cp_index),
                                                || ConstantPoolInfo::FieldRef {
                                                    class_index: ci,
                                                    name_and_type_index: nti,
                                                }),
 
         constant_pool::Tag::MethodRef => chain!(input,
-                                               ci: cp_index ~
-                                               nti: cp_index,
+                                               ci: c!(cp_index) ~
+                                               nti: c!(cp_index),
                                                || ConstantPoolInfo::MethodRef {
                                                    class_index: ci,
                                                    name_and_type_index: nti,
                                                }),
 
         constant_pool::Tag::InterfaceMethodRef => chain!(input,
-                                                         ci: cp_index ~
-                                                         nti: cp_index,
+                                                         ci: c!(cp_index) ~
+                                                         nti: c!(cp_index),
                                                          || ConstantPoolInfo::InterfaceMethodRef {
                                                              class_index: ci,
                                                              name_and_type_index: nti,
                                                          }),
 
-        constant_pool::Tag::String => map!(input, cp_index,
+        constant_pool::Tag::String => map!(input, c!(cp_index),
                                            |si| ConstantPoolInfo::String { string_index: si }),
 
         constant_pool::Tag::Integer => map!(input, p!(be_u32),
@@ -129,8 +135,8 @@ fn cp_info_info(input: &[u8], tag: constant_pool::Tag) -> ParseResult<&[u8], Con
                                              }),
 
         constant_pool::Tag::NameAndType => chain!(input,
-                                                  ni: cp_index ~
-                                                  di: cp_index,
+                                                  ni: c!(cp_index) ~
+                                                  di: c!(cp_index),
                                                   || ConstantPoolInfo::NameAndType {
                                                       name_index: ni,
                                                       descriptor_index: di,
@@ -143,37 +149,41 @@ fn cp_info_info(input: &[u8], tag: constant_pool::Tag) -> ParseResult<&[u8], Con
 
         constant_pool::Tag::MethodHandle => unimplemented!(),
 
-        constant_pool::Tag::MethodType => map!(input, cp_index,
+        constant_pool::Tag::MethodType => map!(input, c!(cp_index),
                                                |di| ConstantPoolInfo::MethodType {
                                                    descriptor_index: di
                                                }),
 
         constant_pool::Tag::InvokeDynamic => chain!(input,
-                                                    bmai: cp_index ~
-                                                    nti: cp_index,
+                                                    bmai: c!(cp_index) ~
+                                                    nti: c!(cp_index),
                                                     || ConstantPoolInfo::InvokeDynamic {
                                                         bootstrap_method_attr_index: bmai,
                                                         name_and_type_index: nti,
                                                     }),
 
         constant_pool::Tag::Unknown(t) => p_fail!(Error::UnknownConstantPoolTag { tag: t }),
-    }
+    };
+    Ok(r)
 }
 
-named!(cp_info<&[u8], constant_pool::ConstantPoolInfo, Error>, my_error!(Error::ConstantPoolInfo, chain!(
-    tag: cp_info_tag ~
-    cp_info: apply!(cp_info_info, tag),
-    || {println!("{:?}", cp_info); cp_info})));
+n!(cp_info<&[u8], constant_pool::ConstantPoolInfo, Error>, p_cut!(
+    Error::ConstantPoolInfo,
+    chain!(
+        tag: c!(cp_info_tag) ~
+        cp_info: c!(cp_info_info, tag),
+        || cp_info)));
 
 
-named!(pub parse_class_file<&[u8], i32, Error>,
-       chain!(magic ~
-              minor_version: p!(be_u16) ~
-              major_version: p!(be_u16) ~
-              constant_pool_count: p!(be_u16) ~
-              constant_pool: my_error!(Error::ConstantPool { constant_pool_count: constant_pool_count },
-                                       dbg_dmp!(count!(cp_info, constant_pool_count as usize - 1))),
-              || { 17 }));
+n!(pub parse_class_file<&[u8], i32, Error>, p_cut!(
+    Error::ClassFile,
+    chain!(c!(magic) ~
+           minor_version: p!(be_u16) ~
+           major_version: p!(be_u16) ~
+           constant_pool_count: p!(be_u16) ~
+           constant_pool: p_cut!(Error::ConstantPool { constant_pool_count: constant_pool_count },
+                                 count!(c!(cp_info), constant_pool_count as usize - 1)),
+           || { 17 })));
 
 #[cfg(test)]
 mod test {
