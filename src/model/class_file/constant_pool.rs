@@ -63,8 +63,56 @@ impl From<u1> for Tag {
     }
 }
 
+pub mod reference_kind {
+    use super::constant_pool_index;
+    use super::super::u1;
+
+    pub mod tags {
+        use super::super::super::u1;
+        pub const GET_FIELD: u1 = 1;
+        pub const GET_STATIC: u1 = 2;
+        pub const PUT_FIELD: u1 = 3;
+        pub const PUT_STATIC: u1 = 4;
+        pub const INVOKE_VIRTUAL: u1 = 5;
+        pub const INVOKE_STATIC: u1 = 6;
+        pub const INVOKE_SPECIAL: u1 = 7;
+        pub const NEW_INVOKE_SPECIAL: u1 = 8;
+        pub const INVOKE_INTERFACE: u1 = 9;
+    }
+
+    pub enum Tag {
+        GetField,
+        GetStatic,
+        PutField,
+        PutStatic,
+        InvokeVirtual,
+        InvokeStatic,
+        InvokeSpecial,
+        NewInvokeSpecial,
+        InvokeInterface,
+        Unknown(u1),
+    }
+
+    impl From<u1> for Tag {
+        fn from(tag: u1) -> Self {
+            match tag {
+                tags::GET_FIELD => Tag::GetField,
+                tags::GET_STATIC => Tag::GetStatic,
+                tags::PUT_FIELD => Tag::PutField,
+                tags::PUT_STATIC => Tag::PutStatic,
+                tags::INVOKE_VIRTUAL => Tag::InvokeVirtual,
+                tags::INVOKE_STATIC => Tag::InvokeStatic,
+                tags::INVOKE_SPECIAL => Tag::InvokeSpecial,
+                tags::NEW_INVOKE_SPECIAL => Tag::NewInvokeSpecial,
+                tags::INVOKE_INTERFACE => Tag::InvokeInterface,
+                _ => Tag::Unknown(tag),
+            }
+        }
+    }
+}
+
 #[derive(Debug)]
-pub enum ReferenceKind {
+pub enum MethodReference {
     GetField { reference_index: constant_pool_index },
     GetStatic { reference_index: constant_pool_index },
     PutField { reference_index: constant_pool_index },
@@ -95,7 +143,7 @@ pub enum ConstantPoolInfo {
         descriptor_index: constant_pool_index,
     },
     Utf8 { bytes: Vec<u1> },
-    MethodHandle { reference_kind: ReferenceKind, reference_index: constant_pool_index },
+    MethodHandle { reference: MethodReference },
     MethodType { descriptor_index: constant_pool_index },
     InvokeDynamic {
         /// A valid index into the `bootstrap_methods` array of the bootstrap

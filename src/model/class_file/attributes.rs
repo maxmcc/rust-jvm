@@ -10,24 +10,24 @@ pub struct ExceptionTableEntry {
     /// which the exception handler is active. The value of `start_pc` must be a
     /// valid index into the `code` array of the opcode of an instruction. The
     /// exception handler is active in the range `[start_pc, end_pc)`.
-    start_pc: u2,
+    pub start_pc: u2,
     /// Indicates the (exclusive) end of the range in the `code` array at which
     /// the exception handler is active. The value of `end_pc` must be a valid
     /// index into the `code` array of the opcode of an instruction or must be
     /// equal to the length of the `code` array. The exception handler is active
     /// in the range `[start_pc, end_pc)`.
-    end_pc: u2,
+    pub end_pc: u2,
     /// The value of the `handler_pc` item indicates the start of the exception
     /// handler. The value of the item must be a valid index into the code array
     /// and must be the index of the opcode of an instruction.
-    handler_pc: u2,
+    pub handler_pc: u2,
     /// If the value of the `catch_type` item is nonzero, it must be a valid
     /// index into the `constant_pool` table. The `constant_pool` entry at that
     /// index must be a `ConstantPoolInfo::Class` structure representing a class
     /// of exceptions that this exception handler is designated to catch. The
     /// exception handler will be called only if the thrown exception is an
     /// instance of the given class or one of its subclasses.
-    catch_type: constant_pool_index,
+    pub catch_type: constant_pool_index,
 }
 
 #[derive(Debug)]
@@ -56,6 +56,36 @@ pub enum StackMapFrame {
     ChopFrame { offset_delta: u2 },
     AppendFrame { offset_delta: u2, locals: Vec<VerificationTypeInfo> },
     FullFrame { offset_delta: u2, locals: Vec<VerificationTypeInfo>, stack: Vec<VerificationTypeInfo> },
+}
+
+pub mod stack_map_frame {
+    use super::super::u1;
+
+    pub enum Tag {
+        SameFrame(u1),
+        SameLocals1StackItemFrame(u1),
+        SameLocals1StackItemFrameExtended(u1),
+        ChopFrame(u1),
+        SameFrameExtended(u1),
+        AppendFrame(u1),
+        FullFrame(u1),
+        Unknown(u1),
+    }
+
+    impl From<u1> for Tag {
+        fn from(t: u1) -> Self {
+            match t {
+                0...63 => Tag::SameFrame(t),
+                64...127 => Tag::SameLocals1StackItemFrame(t),
+                247 => Tag::SameLocals1StackItemFrameExtended(t),
+                248...250 => Tag::ChopFrame(t),
+                251 => Tag::SameFrameExtended(t),
+                252...254 => Tag::AppendFrame(t),
+                255 => Tag::FullFrame(t),
+                _ => Tag::Unknown(t),
+            }
+        }
+    }
 }
 
 #[derive(Debug)]
