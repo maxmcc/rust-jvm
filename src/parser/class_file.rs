@@ -17,7 +17,7 @@ pub enum Error {
     ConstantPoolInfo,
     UnknownConstantPoolTag { tag: u8 },
     IllegalModifiedUtf8 { byte: u8 },
-    ModifiedUtf8,
+    ModifiedUtf8 { length: usize },
 }
 
 macro_rules! p {
@@ -68,12 +68,12 @@ macro_rules! satisfy (
 );
 
 n!(modified_utf8<&[u8], u8, Error>, satisfy!(
-    |b| [0x00, 0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd,
-         0xfe, 0xff].contains(&b),
+    |b| ![0x00, 0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd,
+          0xfe, 0xff].contains(&b),
     |b| Error::IllegalModifiedUtf8 { byte: b }));
 
 macro_rules! take_modified_utf8 {
-    ($i: expr, $n: expr) => (p_cut!($i, Error::ModifiedUtf8, count!(c!(modified_utf8), $n)))
+    ($i: expr, $n: expr) => (p_cut!($i, Error::ModifiedUtf8 { length: $n }, count!(c!(modified_utf8), $n)))
 }
 
 static mut cp_info_count: usize = 0;
@@ -164,6 +164,7 @@ fn cp_info_info(input: &[u8], tag: constant_pool::Tag) -> ParseResult<&[u8], Con
 
         constant_pool::Tag::Unknown(t) => p_fail!(Error::UnknownConstantPoolTag { tag: t }),
     };
+    println!("cp entry = {:?}", r);
     Ok(r)
 }
 
