@@ -174,7 +174,6 @@ macro_rules! c {
     // });
 }
 
-
 #[cfg(test)]
 mod test {
     use nom::IResult;

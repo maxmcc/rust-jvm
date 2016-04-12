@@ -3,7 +3,12 @@
 //! This is a documentation comment for our library.
 
 #[macro_use]
+extern crate log;
+
+#[macro_use]
 extern crate nom;
 
 pub mod model;
 pub mod parser;
+
+mod logging;

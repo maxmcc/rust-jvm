@@ -4,6 +4,8 @@ use super::constant_pool_index;
 use super::access_flags::inner_class_access_flags;
 use super::access_flags::parameter_access_flags;
 
+pub use self::stack_map_frame::VerificationTypeInfo;
+
 #[derive(Debug)]
 pub struct ExceptionTableEntry {
     /// Indicates the (inclusive) start of the range in the `code` array at
@@ -30,37 +32,81 @@ pub struct ExceptionTableEntry {
     pub catch_type: constant_pool_index,
 }
 
-#[derive(Debug)]
-pub enum VerificationTypeInfo {
-    Top,
-    Integer,
-    Float,
-    Long,
-    Double,
-    Null,
-    UninitializedThis,
-    Object { class_index: constant_pool_index },
-    Uninitialized {
-        /// The offset in the `code` array of the `Code` attribute that contains
-        /// this `StackMapTable` attribute, of the _new_ instruction that
-        /// created the object stored in the location.
-        offset: u2,
-    },
-}
-
+/// A `StackMapFrame` variant stores a relative bytecode offset, the
+/// verification types (§4.10.1.2) for the local variables, and the verification
+/// types for the operand stack. Each variant stores a bytecode offset _relative
+/// to the previous_ `StackMapFrame`. The actual bytecode offset can be
+/// calculated as described in (§4.7.4).
 #[derive(Debug)]
 pub enum StackMapFrame {
     SameFrame { offset_delta: u1 },
     SameLocals1StackItemFrame { offset_delta: u1, stack_item: VerificationTypeInfo },
     SameLocals1StackItemFrameExtended { offset_delta: u2, stack_item: VerificationTypeInfo },
-    ChopFrame { offset_delta: u2 },
+    ChopFrame { offset_delta: u2, num_chopped: u1 },
+    SameFrameExtended { offset_delta: u2 },
     AppendFrame { offset_delta: u2, locals: Vec<VerificationTypeInfo> },
     FullFrame { offset_delta: u2, locals: Vec<VerificationTypeInfo>, stack: Vec<VerificationTypeInfo> },
 }
 
 pub mod stack_map_frame {
     use super::super::u1;
+    use super::super::u2;
+    use super::super::constant_pool_index;
 
+    pub mod verification_type_info {
+        use super::super::super::u1;
+
+        #[derive(Debug, PartialEq)]
+        pub enum Tag {
+            Top,
+            Integer,
+            Float,
+            Long,
+            Double,
+            Null,
+            UninitializedThis,
+            Object,
+            Uninitialized,
+            Unknown(u1),
+        }
+
+        impl From<u1> for Tag {
+            fn from(t: u1) -> Self {
+                match t {
+                    0 => Tag::Top,
+                    1 => Tag::Integer,
+                    2 => Tag::Float,
+                    4 => Tag::Long,
+                    3 => Tag::Double,
+                    5 => Tag::Null,
+                    6 => Tag::UninitializedThis,
+                    7 => Tag::Object,
+                    8 => Tag::Uninitialized,
+                    _ => Tag::Unknown(t),
+                }
+            }
+        }
+    }
+
+    #[derive(Debug)]
+    pub enum VerificationTypeInfo {
+        Top,
+        Integer,
+        Float,
+        Long,
+        Double,
+        Null,
+        UninitializedThis,
+        Object { class_index: constant_pool_index },
+        Uninitialized {
+            /// The offset in the `code` array of the `Code` attribute that contains
+            /// this `StackMapTable` attribute, of the _new_ instruction that
+            /// created the object stored in the location.
+            offset: u2,
+        },
+    }
+
+    #[derive(Debug, PartialEq)]
     pub enum Tag {
         SameFrame(u1),
         SameLocals1StackItemFrame(u1),
@@ -69,6 +115,7 @@ pub mod stack_map_frame {
         SameFrameExtended(u1),
         AppendFrame(u1),
         FullFrame(u1),
+        Reserved(u1),
         Unknown(u1),
     }
 
@@ -82,6 +129,7 @@ pub mod stack_map_frame {
                 251 => Tag::SameFrameExtended(t),
                 252...254 => Tag::AppendFrame(t),
                 255 => Tag::FullFrame(t),
+                128...246 => Tag::Reserved(t),
                 _ => Tag::Unknown(t),
             }
         }
@@ -142,6 +190,30 @@ pub struct Annotation {
 pub struct Parameter {
     name_index: constant_pool_index,
     access_flags: parameter_access_flags::t,
+}
+
+#[derive(Debug)]
+pub struct LineNumberInfo {
+    start_pc: u2,
+    line_number: u2,
+}
+
+#[derive(Debug)]
+pub struct LocalVariableInfo {
+    start_pc: u2,
+    length: u2,
+    name_index: u2,
+    descriptor_index: u2,
+    index: u2,
+}
+
+#[derive(Debug)]
+pub struct LocalVariableTypeInfo {
+    start_pc: u2,
+    length: u2,
+    name_index: u2,
+    signature_index: u2,
+    index: u2,
 }
 
 #[derive(Debug)]
@@ -211,7 +283,30 @@ pub enum AttributeInfo {
         parameters: Vec<Parameter>,
     },
 
-    /// TODO: debug-related attributes
+    SourceFile {
+        attribute_name_index: constant_pool_index,
+        sourcefile_index: constant_pool_index,
+    },
+    SourceDebugExtension {
+        attribute_name_index: constant_pool_index,
+        debug_extension: Vec<u1>,
+    },
+    LineNumberTable {
+        attribute_name_index: constant_pool_index,
+        line_number_table: Vec<LineNumberInfo>,
+    },
+    LocalVariableTable {
+        attribute_name_index: constant_pool_index,
+        local_variable_table: Vec<LocalVariableInfo>,
+    },
+    LocalVariableTypeTable {
+        attribute_name_index: constant_pool_index,
+        local_variable_type_table: Vec<LocalVariableTypeInfo>,
+    },
+    Deprecated {
+        attribute_name_index: constant_pool_index,
+    },
+
     Unknown {
         /// A valid index into the `constant_pool` table. The `constant_pool`
         /// entry at that index must be a valid `ConstantPoolInfo::Utf8`

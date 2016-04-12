@@ -21,6 +21,9 @@ pub enum Error {
     ConstantPool { constant_pool_count: usize },
     ConstantPoolInfo,
     UnknownConstantPoolTag { tag: u8 },
+    ConstantPoolIndexOutOfBounds { index: usize },
+    UnexpectedConstantPoolType { expected: constant_pool::Tag, actual: constant_pool::Tag },
+
     IllegalModifiedUtf8 { byte: u8 },
     ModifiedUtf8 { length: usize },
     UnknownConstantPoolMethodReferenceTag { tag: u8 },
@@ -39,6 +42,10 @@ pub enum Error {
     ExceptionTableEntry,
     StackMapTable { number_of_entries: usize },
     StackMapFrame,
+    UnknownStackMapFrameTag { tag: u8 },
+    ReservedStackMapFrameTag { tag: u8 },
+    VerificationTypeInfo,
+    UnknownVerificationTypeInfoTag { tag: u8 },
 }
 
 macro_rules! p {
@@ -90,13 +97,32 @@ macro_rules! p_try {
 
 n!(magic<Input, &[u8], Error>, p_cut!(Error::Magic, p!(tag!(&[0xCA, 0xFE, 0xBA, 0xBE]))));
 
-n!(cp_info_tag<Input, constant_pool::Tag, Error>, chain!(
-    tag: p!(be_u8),
-    || constant_pool::Tag::from(tag)));
+n!(cp_info_tag<Input, constant_pool::Tag, Error>, map!(
+    p!(be_u8), constant_pool::Tag::from));
 
-n!(cp_index<Input, u16, Error>, p!(be_u16));
+n!(cp_index<Input, ConstantPoolIndex, Error>, p!(be_u16));
 
-macro_rules! satisfy (
+macro_rules! check_cp_index_tag {
+    ($constant_pool: expr, $i: expr, $tag: expr) => ({
+        match $constant_pool.get($i) {
+            None => p_fail!(Error::ConstantPoolIndexOutOfBounds { index: $i }),
+            Some(r) if r.tag() == $tag => Ok(()),
+            Some(r) => p_fail!(Error::UnexpectedConstantPoolType {
+                expected: $tag,
+                actual: r.tag(),
+            }),
+        }
+    });
+}
+
+fn cp_index_tag<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool, tag: constant_pool::Tag)
+                        -> ParseResult<'a, ConstantPoolIndex> {
+    let (input, i) = p_try!(input, p_wrap!(p!(be_u16)));
+    try!(check_cp_index_tag!(constant_pool, i as usize, tag));
+    Ok(done!(input, i))
+}
+
+macro_rules! satisfy {
     ($i: expr, $f: expr, $e: expr) => ({
       let res: $crate::nom::IResult<_, _, _> = if $i.len() == 0 {
           $crate::nom::IResult::Incomplete($crate::nom::Needed::Size(1))
@@ -111,7 +137,7 @@ macro_rules! satisfy (
       res
     }
   );
-);
+}
 
 n!(modified_utf8<Input, u8, Error>, satisfy!(
     |b| ![0x00, 0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd,
@@ -268,56 +294,121 @@ n!(cp_info<Input, ConstantPoolInfo, Error>, p_cut!(
            cp_info: c!(cp_info_info, tag),
            || cp_info)));
 
-fn exception_table<'a, 'b>(input: Input<'a>, constant_pool: &'b Vec<ConstantPoolInfo>)
+fn exception_table<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
                            -> ParseResult<'a, attributes::ExceptionTableEntry> {
-    p_wrap!(input, p_cut!(Error::ExceptionTableEntry,
-                          chain!(start_pc: p!(be_u16) ~
-                                 end_pc: p!(be_u16) ~
-                                 handler_pc: p!(be_u16) ~
-                                 catch_type: c!(cp_index),
-                                 || attributes::ExceptionTableEntry {
-                                     start_pc: start_pc,
-                                     end_pc: end_pc,
-                                     handler_pc: handler_pc,
-                                     catch_type: catch_type,
-                                 })))
-}
+    p_wrap!(input, p_cut!(
+        Error::ExceptionTableEntry,
+        chain!(start_pc: p!(be_u16) ~
+               end_pc: p!(be_u16) ~
+               handler_pc: p!(be_u16) ~
+               catch_type: c!(cp_index_tag, constant_pool, constant_pool::Tag::Class),
+               || attributes::ExceptionTableEntry {
+                   start_pc: start_pc,
+                   end_pc: end_pc,
+                   handler_pc: handler_pc,
+                   catch_type: catch_type,
+               })))
+    }
 
-fn verification_type_info(input: Input) -> ParseResult<attributes::VerificationTypeInfo> {
-    unimplemented!()
+n!(verification_type_info_tag<Input, attributes::stack_map_frame::verification_type_info::Tag, Error>,
+   map!(p!(be_u8), attributes::stack_map_frame::verification_type_info::Tag::from));
+
+fn verification_type_info<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
+                                  -> ParseResult<'a, attributes::VerificationTypeInfo> {
+    use model::class_file::attributes::stack_map_frame::verification_type_info::Tag;
+    use model::class_file::attributes::stack_map_frame::VerificationTypeInfo;
+    let action = |input| {
+        let (input, tag) = p_try!(input, verification_type_info_tag);
+        let r = match tag {
+            Tag::Top => done!(input, VerificationTypeInfo::Top),
+            Tag::Integer => done!(input, VerificationTypeInfo::Integer),
+            Tag::Float => done!(input, VerificationTypeInfo::Float),
+            Tag::Long => done!(input, VerificationTypeInfo::Long),
+            Tag::Double => done!(input, VerificationTypeInfo::Double),
+            Tag::Null => done!(input, VerificationTypeInfo::Null),
+            Tag::UninitializedThis => done!(input, VerificationTypeInfo::UninitializedThis),
+            Tag::Object => {
+                let (input, i) = p_try!(input, cp_index);
+                try!(check_cp_index_tag!(constant_pool, i as usize, constant_pool::Tag::Class));
+                done!(input, VerificationTypeInfo::Object { class_index: i })
+            },
+            Tag::Uninitialized => map!(input, p!(be_u16),
+                                       |offset| VerificationTypeInfo::Uninitialized {
+                                                   offset: offset,
+                                       }),
+            Tag::Unknown(t) => p_fail!(Error::UnknownVerificationTypeInfoTag { tag: t }),
+        };
+        Ok(r)
+    };
+    p_wrap!(input, p_cut!(Error::VerificationTypeInfo, c!(action)))
 }
 
 fn stack_map_frame_info<'a, 'b>(input: Input<'a>, tag: attributes::stack_map_frame::Tag,
-                                constant_pool: &'b Vec<ConstantPoolInfo>)
+                                constant_pool: &'b ConstantPool)
                                 -> ParseResult<'a, attributes::StackMapFrame> {
     use model::class_file::attributes::stack_map_frame::Tag;
     use model::class_file::attributes::StackMapFrame;
     let r = match tag {
         Tag::SameFrame(t) => done!(input, StackMapFrame::SameFrame { offset_delta: t }),
-        Tag::SameLocals1StackItemFrame(t) => chain!(input,
-                                                    stack_item: c!(verification_type_info),
-                                                    || StackMapFrame::SameLocals1StackItemFrame {
-                                                        offset_delta: t - 64,
-                                                        stack_item: stack_item,
-                                                    }),
-        Tag::SameLocals1StackItemFrameExtended(t) =>
+        Tag::SameLocals1StackItemFrame(t) =>
+            chain!(input,
+                   stack_item: c!(verification_type_info, constant_pool),
+                   || StackMapFrame::SameLocals1StackItemFrame {
+                       offset_delta: t - 64,
+                       stack_item: stack_item,
+                   }),
+
+        Tag::SameLocals1StackItemFrameExtended(_) =>
             chain!(input,
                    offset_delta: p!(be_u16) ~
-                   stack_item: c!(verification_type_info),
+                   stack_item: c!(verification_type_info, constant_pool),
                    || StackMapFrame::SameLocals1StackItemFrameExtended {
                        offset_delta: offset_delta,
                        stack_item: stack_item,
                    }),
-        Tag::ChopFrame(t) => unimplemented!(),
-        Tag::SameFrameExtended(t) => unimplemented!(),
-        Tag::AppendFrame(t) => unimplemented!(),
-        Tag::FullFrame(t) => unimplemented!(),
-        Tag::Unknown(t) => unimplemented!(),
+
+        Tag::ChopFrame(t) => map!(input,
+                                  p!(be_u16),
+                                  |offset_delta| StackMapFrame::ChopFrame {
+                                        offset_delta: offset_delta,
+                                        num_chopped: 251 - t
+                                  }),
+
+        Tag::SameFrameExtended(_) => map!(input,
+                                          p!(be_u16),
+                                          |offset_delta| StackMapFrame::SameFrameExtended {
+                                              offset_delta: offset_delta
+                                          }),
+
+        Tag::AppendFrame(t) =>
+            chain!(input,
+                   offset_delta: p!(be_u16) ~
+                   locals: count!(c!(verification_type_info, constant_pool), t as usize - 251),
+                   || StackMapFrame::AppendFrame {
+                       offset_delta: offset_delta,
+                       locals: locals,
+                   }),
+
+        Tag::FullFrame(_) =>
+            chain!(input,
+                   offset_delta: p!(be_u16) ~
+                   num_locals: p!(be_u16) ~
+                   locals: count!(c!(verification_type_info, constant_pool), num_locals as usize) ~
+                   num_stack: p!(be_u16) ~
+                   stack: count!(c!(verification_type_info, constant_pool), num_stack as usize),
+                   || StackMapFrame::FullFrame {
+                       offset_delta: offset_delta,
+                       locals: locals,
+                       stack: stack,
+                   }),
+
+        Tag::Reserved(t) => p_fail!(Error::ReservedStackMapFrameTag { tag: t }),
+        Tag::Unknown(t) => p_fail!(Error::UnknownStackMapFrameTag { tag: t }),
     };
     Ok(r)
 }
 
-fn stack_map_frame<'a, 'b>(input: Input<'a>, constant_pool: &'b Vec<ConstantPoolInfo>)
+fn stack_map_frame<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
                            -> ParseResult<'a, attributes::StackMapFrame> {
     p_wrap!(input, p_cut!(Error::StackMapFrame,
                           chain!(tag: map!(p!(be_u8), attributes::stack_map_frame::Tag::from) ~
@@ -325,64 +416,118 @@ fn stack_map_frame<'a, 'b>(input: Input<'a>, constant_pool: &'b Vec<ConstantPool
                                  || frame)))
 }
 
-fn attribute_info<'a, 'b>(input: Input<'a>, constant_pool: &'b Vec<ConstantPoolInfo>)
+fn attribute_info<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
                           -> ParseResult<'a, AttributeInfo> {
     let (input, attribute_name_index) = p_try!(input, cp_index);
+    let (input, attribute_length) = p_try!(input, p_wrap!(p!(be_u32)));
     let r = match constant_pool.get(attribute_name_index as usize) {
         None => p_fail!(Error::AttributeInfoNameIndexOutOfBounds {
             attribute_name_index: attribute_name_index as usize
         }),
+
         Some(cp_entry) => match *cp_entry {
             ConstantPoolInfo::Utf8 { bytes: ref bs } => match bs.as_slice() {
                 b"ConstantValue" => chain!(input,
-                                           len: p!(be_u32) ~
                                            ci: c!(cp_index),
                                            || AttributeInfo::ConstantValue {
                                                constant_value_index: ci
                                            }),
-                b"Code" => chain!(input,
-                                  len: p!(be_u32) ~
-                                  max_stack: p!(be_u16) ~
-                                  max_locals: p!(be_u16) ~
-                                  code_length: p!(be_u32) ~
-                                  code: p!(map!(take!(code_length as usize), |bs: &[u8]| bs.to_vec())) ~
-                                  exception_table_length: p!(be_u16) ~
-                                  exception_table: count!(c!(exception_table, constant_pool),
-                                                          exception_table_length as usize) ~
-                                  attributes_count: p!(be_u16) ~
-                                  attributes: p_cut!(
-                                      Error::CodeAttributes {
-                                          attributes_count: attributes_count as usize
-                                      },
-                                      count!(c!(attribute, constant_pool),
-                                             attributes_count as usize)),
-                                  || AttributeInfo::Code {
-                                      max_stack: max_stack,
-                                      max_locals: max_locals,
-                                      code: code,
-                                      exception_table: exception_table,
-                                      attributes: attributes,
-                                  }),
 
-                b"StackMapTable" => chain!(input,
-                                           entries_count: p!(be_u16) ~
-                                           entries: p_cut!(
-                                               Error::StackMapTable {
-                                                   number_of_entries: entries_count as usize,
-                                               },
-                                               count!(c!(stack_map_frame, &constant_pool),
-                                                      entries_count as usize)),
-                                           || AttributeInfo::StackMapTable { entries: entries }),
+                b"Code" =>
+                    chain!(input,
+                           max_stack: p!(be_u16) ~
+                           max_locals: p!(be_u16) ~
+                           code_length: p!(be_u32) ~
+                           code: p!(map!(take!(code_length as usize), |bs: Input| bs.to_vec())) ~
+                           exception_table_length: p!(be_u16) ~
+                           exception_table: count!(c!(exception_table, constant_pool),
+                                                   exception_table_length as usize) ~
+                           attributes_count: p!(be_u16) ~
+                           attributes: p_cut!(
+                               Error::CodeAttributes {
+                                   attributes_count: attributes_count as usize
+                               },
+                               count!(c!(attribute, constant_pool),
+                                      attributes_count as usize)),
+                           ||
+                           AttributeInfo::Code {
+                               max_stack: max_stack,
+                               max_locals: max_locals,
+                               code: code,
+                               exception_table: exception_table,
+                               attributes: attributes,
+                           }),
 
-                _ => unimplemented!(),
+                b"StackMapTable" =>
+                    chain!(input,
+                           count: p!(be_u16) ~
+                           entries: p_cut!(
+                               Error::StackMapTable { number_of_entries: count as usize },
+                               count!(c!(stack_map_frame, &constant_pool), count as usize)),
+                           || AttributeInfo::StackMapTable { entries: entries }),
+
+                b"Exceptions" =>
+                    chain!(input,
+                           exceptions_count: p!(be_u16) ~
+                           exception_index_table: count!(
+                               c!(cp_index_tag, constant_pool, constant_pool::Tag::Class),
+                               exceptions_count as usize),
+                           || AttributeInfo::Exceptions {
+                               exception_index_table: exception_index_table,
+                           }),
+
+                b"InnerClasses" => unimplemented!(),
+
+                b"EnclosingMethod" => unimplemented!(),
+
+                b"Synthetic" => unimplemented!(),
+
+                b"Signature" => unimplemented!(),
+
+                b"RuntimeVisibleAnnotations" => unimplemented!(),
+
+                b"RuntimeInvisibleAnnotations" => unimplemented!(),
+
+                b"RuntimeVisibleParameterAnnotations" => unimplemented!(),
+
+                b"RuntimeInvisibleParameterAnnotations" => unimplemented!(),
+
+                b"RuntimeVisibleTypeAnnotations" => unimplemented!(),
+
+                b"RuntimeInvisibleTypeAnnotations" => unimplemented!(),
+
+                b"AnnotationDefault" => unimplemented!(),
+
+                b"MethodParameters" => unimplemented!(),
+
+
+                b"SourceFile" => unimplemented!(),
+
+                b"SourceDebugExtension" => unimplemented!(),
+
+                b"LineNumberTable" => unimplemented!(),
+
+                b"LocalVariableTable" => unimplemented!(),
+
+                b"Deprecated" => unimplemented!(),
+
+                _ => map!(input, p!(take!(attribute_length)), |bs: Input| AttributeInfo::Unknown {
+                    attribute_name_index: attribute_name_index,
+                    info: bs.to_vec()
+                }),
             },
-            _ => unimplemented!(),
+
+
+            ref cp_entry => p_fail!(Error::UnexpectedConstantPoolType {
+                expected: constant_pool::Tag::Utf8,
+                actual: cp_entry.tag()
+            }),
         },
     };
     Ok(r)
 }
 
-fn attribute<'a, 'b>(input: Input<'a>, constant_pool: &'b Vec<ConstantPoolInfo>)
+fn attribute<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
                      -> ParseResult<'a, AttributeInfo> {
     p_wrap!(input, p_cut!(
         Error::AttributeInfo,
@@ -392,7 +537,7 @@ fn attribute<'a, 'b>(input: Input<'a>, constant_pool: &'b Vec<ConstantPoolInfo>)
                || attribute)))
 }
 
-fn field<'a, 'b>(input: Input<'a>, constant_pool: &'b Vec<ConstantPoolInfo>)
+fn field<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
                  -> ParseResult<'a, FieldInfo> {
     p_wrap!(input, p_cut!(
         Error::FieldInfo,
@@ -411,7 +556,7 @@ fn field<'a, 'b>(input: Input<'a>, constant_pool: &'b Vec<ConstantPoolInfo>)
                })))
 }
 
-fn method<'a, 'b>(input: Input<'a>, constant_pool: &'b Vec<ConstantPoolInfo>)
+fn method<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
                  -> ParseResult<'a, MethodInfo> {
     p_wrap!(input, p_cut!(
         Error::MethodInfo,
@@ -437,11 +582,12 @@ n!(pub parse_class_file<Input, i32, Error>, p_cut!(
            minor_version: p!(be_u16) ~
            major_version: p!(be_u16) ~
            constant_pool_count: p!(be_u16) ~
-           constant_pool: p_cut!(
+           constant_pool: p_cut!( // TODO: Verify validity of constant pool
                Error::ConstantPool {
                    constant_pool_count: constant_pool_count as usize
                },
-               count!(c!(cp_info), constant_pool_count as usize - 1)) ~
+               map!(count!(c!(cp_info), constant_pool_count as usize - 1),
+                    ConstantPool::from_zero_indexed_vec)) ~
            access_flags: p!(be_u16) ~
            this_class: c!(cp_index) ~
            super_class: c!(cp_index) ~

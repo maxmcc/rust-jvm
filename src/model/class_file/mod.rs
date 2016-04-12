@@ -6,8 +6,8 @@ pub use self::access_flags::class_access_flags;
 pub use self::access_flags::field_access_flags;
 pub use self::access_flags::method_access_flags;
 pub use self::attributes::AttributeInfo;
-
 pub use self::constant_pool::ConstantPoolInfo;
+pub use self::constant_pool::ConstantPool;
 
 #[allow(non_camel_case_types)]
 pub type u1 = u8;
@@ -63,7 +63,7 @@ pub struct ClassFile {
     /// Table of structures representing various string constants, class and
     /// interface names, field names, and other constants. The `constant_pool`
     /// table is indexed from 1 to `constant_pool_count - 1`.
-    pub constant_pool: Vec<ConstantPoolInfo>,
+    pub constant_pool: ConstantPool,
     /// Mask of flags used to denote access permissions to and properties of
     /// this class or interface. See the documentation for `ClassAccessFlags`
     /// for the interpretation of each flag.
