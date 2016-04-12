@@ -175,45 +175,45 @@ pub enum ElementValue {
 
 #[derive(Debug)]
 pub struct ElementValuePair {
-    element_name_index: constant_pool_index,
-    element_value: ElementValue,
+    pub element_name_index: constant_pool_index,
+    pub element_value: ElementValue,
 }
 
 #[derive(Debug)]
 pub struct Annotation {
     /// An index into the `constant_pool` table for a `ConstantPoolInfo::Utf8` structure.
-    type_index: constant_pool_index,
-    element_value_pairs: Vec<ElementValuePair>,
+    pub type_index: constant_pool_index,
+    pub element_value_pairs: Vec<ElementValuePair>,
 }
 
 #[derive(Debug)]
 pub struct Parameter {
-    name_index: constant_pool_index,
-    access_flags: parameter_access_flags::t,
+    pub name_index: constant_pool_index,
+    pub access_flags: parameter_access_flags::t,
 }
 
 #[derive(Debug)]
 pub struct LineNumberInfo {
-    start_pc: u2,
-    line_number: u2,
+    pub start_pc: u2,
+    pub line_number: u2,
 }
 
 #[derive(Debug)]
 pub struct LocalVariableInfo {
-    start_pc: u2,
-    length: u2,
-    name_index: u2,
-    descriptor_index: u2,
-    index: u2,
+    pub start_pc: u2,
+    pub length: u2,
+    pub name_index: u2,
+    pub descriptor_index: u2,
+    pub index: u2,
 }
 
 #[derive(Debug)]
 pub struct LocalVariableTypeInfo {
-    start_pc: u2,
-    length: u2,
-    name_index: u2,
-    signature_index: u2,
-    index: u2,
+    pub start_pc: u2,
+    pub length: u2,
+    pub name_index: u2,
+    pub signature_index: u2,
+    pub index: u2,
 }
 
 #[derive(Debug)]

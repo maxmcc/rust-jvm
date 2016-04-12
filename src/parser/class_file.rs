@@ -10,6 +10,8 @@ use model::class_file::constant_pool;
 use model::class_file::constant_pool::ConstantPool;
 use model::class_file::constant_pool::ConstantPoolInfo;
 
+use util::modified_utf8;
+
 pub type Input<'a> = &'a [u8];
 pub type ParseResult<'a, O> = Result<nom::IResult<Input<'a>, O, Error>, nom::Err<Input<'a>, Error>>;
 pub type ConstantPoolIndex = class_file::constant_pool_index;
@@ -39,7 +41,8 @@ pub enum Error {
     MethodInfo,
     MethodAttributes { attributes_count: usize },
     ClassAttributes { attributes_count: usize },
-    AttributeInfo,
+    Attribute,
+    AttributeInfo { attribute_name: String, attribute_name_index: usize, attribute_length: usize },
     AttributeInfoNameIndexOutOfBounds { attribute_name_index: usize },
 
     CodeAttributes { attributes_count: usize },
@@ -50,6 +53,14 @@ pub enum Error {
     ReservedStackMapFrameTag { tag: u8 },
     VerificationTypeInfo,
     UnknownVerificationTypeInfoTag { tag: u8 },
+    SourceFile,
+    SourceDebugExtension,
+    LineNumberTable { table_length: usize },
+    LineNumberInfo,
+    LocalVariableTable { table_length: usize },
+    LocalVariableInfo,
+    LocalVariableTypeTable { table_length: usize },
+    LocalVariableTypeInfo,
 }
 
 macro_rules! p {
@@ -120,6 +131,8 @@ macro_rules! check_cp_index_tag {
     });
 }
 
+/// Parses for a constant pool index and verifies that its the entry in the
+/// constant pool matches the specified tag.
 fn cp_index_tag<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool, tag: constant_pool::Tag)
                         -> ParseResult<'a, ConstantPoolIndex> {
     let (input, i) = p_try!(input, p_wrap!(p!(be_u16)));
@@ -421,6 +434,45 @@ fn stack_map_frame<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
                                  || frame)))
 }
 
+n!(line_number_info<Input, attributes::LineNumberInfo, Error>, p_cut!(
+    Error::LineNumberInfo,
+    chain!(start_pc: p!(be_u16) ~
+           line_number: p!(be_u16),
+           || attributes::LineNumberInfo {
+               start_pc: start_pc,
+               line_number: line_number,
+           })));
+
+n!(local_variable_info<Input, attributes::LocalVariableInfo, Error>, p_cut!(
+    Error::LocalVariableInfo,
+    chain!(start_pc: p!(be_u16) ~
+           length: p!(be_u16) ~
+           name_index: p!(be_u16) ~
+           descriptor_index: p!(be_u16) ~
+           index: p!(be_u16),
+           || attributes::LocalVariableInfo {
+               start_pc: start_pc,
+               length: length,
+               name_index: name_index,
+               descriptor_index: descriptor_index,
+               index: index,
+           })));
+
+n!(local_variable_type_info<Input, attributes::LocalVariableTypeInfo, Error>, p_cut!(
+    Error::LocalVariableTypeInfo,
+    chain!(start_pc: p!(be_u16) ~
+           length: p!(be_u16) ~
+           name_index: p!(be_u16) ~
+           signature_index: p!(be_u16) ~
+           index: p!(be_u16),
+           || attributes::LocalVariableTypeInfo {
+               start_pc: start_pc,
+               length: length,
+               name_index: name_index,
+               signature_index: signature_index,
+               index: index,
+           })));
+
 fn attribute_info<'a, 'b>(input: Input<'a>, attribute_name_index: ConstantPoolIndex,
                            attribute_length: u32, constant_pool: &'b ConstantPool)
                           -> ParseResult<'a, AttributeInfo> {
@@ -430,104 +482,167 @@ fn attribute_info<'a, 'b>(input: Input<'a>, attribute_name_index: ConstantPoolIn
         }),
 
         Some(cp_entry) => match *cp_entry {
-            ConstantPoolInfo::Utf8 { bytes: ref bs } => match bs.as_slice() {
-                b"ConstantValue" => chain!(input,
-                                           ci: c!(cp_index),
-                                           || AttributeInfo::ConstantValue {
-                                               constant_value_index: ci
-                                           }),
-
-                b"Code" =>
-                    chain!(input,
-                           max_stack: p!(be_u16) ~
-                           max_locals: p!(be_u16) ~
-                           code_length: p!(be_u32) ~
-                           code: p!(map!(take!(code_length as usize), |bs: Input| bs.to_vec())) ~
-                           exception_table_length: p!(be_u16) ~
-                           exception_table: count!(c!(exception_table, constant_pool),
-                                                   exception_table_length as usize) ~
-                           attributes_count: p!(be_u16) ~
-                           attributes: p_cut!(
-                               Error::CodeAttributes {
-                                   attributes_count: attributes_count as usize
-                               },
-                               count!(c!(attribute, constant_pool),
-                                      attributes_count as usize)),
-                           ||
-                           AttributeInfo::Code {
-                               max_stack: max_stack,
-                               max_locals: max_locals,
-                               code: code,
-                               exception_table: exception_table,
-                               attributes: attributes,
-                           }),
-
-                b"StackMapTable" =>
-                    chain!(input,
-                           count: p!(be_u16) ~
-                           entries: p_cut!(
-                               Error::StackMapTable { number_of_entries: count as usize },
-                               count!(c!(stack_map_frame, &constant_pool), count as usize)),
-                           || AttributeInfo::StackMapTable { entries: entries }),
-
-                b"Exceptions" =>
-                    chain!(input,
-                           exceptions_count: p!(be_u16) ~
-                           exception_index_table: count!(
-                               c!(cp_index_tag, constant_pool, constant_pool::Tag::Class),
-                               exceptions_count as usize),
-                           || AttributeInfo::Exceptions {
-                               exception_index_table: exception_index_table,
-                           }),
-
-                b"InnerClasses" => unimplemented!(),
-
-                b"EnclosingMethod" => unimplemented!(),
-
-                b"Synthetic" => unimplemented!(),
-
-                b"Signature" => unimplemented!(),
-
-                b"RuntimeVisibleAnnotations" => unimplemented!(),
-
-                b"RuntimeInvisibleAnnotations" => unimplemented!(),
-
-                b"RuntimeVisibleParameterAnnotations" => unimplemented!(),
-
-                b"RuntimeInvisibleParameterAnnotations" => unimplemented!(),
-
-                b"RuntimeVisibleTypeAnnotations" => unimplemented!(),
-
-                b"RuntimeInvisibleTypeAnnotations" => unimplemented!(),
-
-                b"AnnotationDefault" => unimplemented!(),
-
-                b"MethodParameters" => unimplemented!(),
-
-
-                b"SourceFile" => unimplemented!(),
-
-                b"SourceDebugExtension" => unimplemented!(),
-
-                b"LineNumberTable" => unimplemented!(),
-
-                b"LocalVariableTable" => unimplemented!(),
-
-                b"Deprecated" => unimplemented!(),
-
-                _ => map!(input, p!(take!(attribute_length)), |bs: Input| AttributeInfo::Unknown {
-                    attribute_name_index: attribute_name_index,
-                    info: bs.to_vec()
-                }),
+            ConstantPoolInfo::Utf8 { bytes: ref bs } => {
+                let name = bs.as_slice();
+                p_cut!(
+                    input,
+                    Error::AttributeInfo {
+                        attribute_name: match modified_utf8::from_modified_utf8(name) {
+                            Ok(s) => s,
+                            Err(_) => String::from_utf8_lossy(name).into_owned(),
+                        },
+                        attribute_name_index: attribute_name_index as usize,
+                        attribute_length: attribute_length as usize,
+                    },
+                    c!(attribute_info_switch, bs.as_slice(), attribute_name_index, attribute_length,
+                       constant_pool))
             },
-
 
             ref cp_entry => p_fail!(Error::UnexpectedConstantPoolType {
                 index: attribute_name_index as usize,
                 expected: constant_pool::Tag::Utf8,
                 actual: cp_entry.tag()
             }),
-        },
+        }
+    };
+    Ok(r)
+}
+
+fn attribute_info_switch<'a, 'b>(input: Input<'a>, attribute_name: &[u8],
+                                 attribute_name_index: ConstantPoolIndex, attribute_length: u32,
+                                 constant_pool: &'b ConstantPool)
+                                 -> ParseResult<'a, AttributeInfo> {
+    let r = match attribute_name {
+        b"ConstantValue" => chain!(input,
+                                   ci: c!(cp_index),
+                                   || AttributeInfo::ConstantValue {
+                                       constant_value_index: ci
+                                   }),
+
+        b"Code" =>
+            chain!(input,
+                   max_stack: p!(be_u16) ~
+                   max_locals: p!(be_u16) ~
+                   code_length: p!(be_u32) ~
+                   code: p!(map!(take!(code_length as usize), |bs: Input| bs.to_vec())) ~
+                   exception_table_length: p!(be_u16) ~
+                   exception_table: count!(c!(exception_table, constant_pool),
+                                           exception_table_length as usize) ~
+                   attributes_count: p!(be_u16) ~
+                   attributes: p_cut!(
+                       Error::CodeAttributes {
+                           attributes_count: attributes_count as usize
+                       },
+                       count!(c!(attribute, constant_pool),
+                              attributes_count as usize)),
+                   ||
+                   AttributeInfo::Code {
+                       max_stack: max_stack,
+                       max_locals: max_locals,
+                       code: code,
+                       exception_table: exception_table,
+                       attributes: attributes,
+                   }),
+
+        b"StackMapTable" =>
+            chain!(input,
+                   count: p!(be_u16) ~
+                   entries: p_cut!(
+                       Error::StackMapTable { number_of_entries: count as usize },
+                       count!(c!(stack_map_frame, &constant_pool), count as usize)),
+                   || AttributeInfo::StackMapTable { entries: entries }),
+
+        b"Exceptions" =>
+            chain!(input,
+                   exceptions_count: p!(be_u16) ~
+                   exception_index_table: count!(
+                       c!(cp_index_tag, constant_pool, constant_pool::Tag::Class),
+                       exceptions_count as usize),
+                   || AttributeInfo::Exceptions {
+                       exception_index_table: exception_index_table,
+                   }),
+
+        b"InnerClasses" => unimplemented!(),
+
+        b"EnclosingMethod" => unimplemented!(),
+
+        b"Synthetic" => unimplemented!(),
+
+        b"Signature" => unimplemented!(),
+
+        b"RuntimeVisibleAnnotations" => unimplemented!(),
+
+        b"RuntimeInvisibleAnnotations" => unimplemented!(),
+
+        b"RuntimeVisibleParameterAnnotations" => unimplemented!(),
+
+        b"RuntimeInvisibleParameterAnnotations" => unimplemented!(),
+
+        b"RuntimeVisibleTypeAnnotations" => unimplemented!(),
+
+        b"RuntimeInvisibleTypeAnnotations" => unimplemented!(),
+
+        b"AnnotationDefault" => unimplemented!(),
+
+        b"MethodParameters" => unimplemented!(),
+
+        b"SourceFile" =>
+            map!(input, c!(cp_index_tag, constant_pool, constant_pool::Tag::Utf8),
+                 |si| AttributeInfo::SourceFile {
+                     attribute_name_index: attribute_name_index,
+                     sourcefile_index: si
+                 }),
+
+        b"SourceDebugExtension" => p_cut!(
+            input,
+            Error::SourceDebugExtension,
+            map!(p!(take!(attribute_length)),
+                 |bs: Input| AttributeInfo::SourceDebugExtension {
+                     attribute_name_index: attribute_name_index,
+                     debug_extension: bs.to_vec(),
+                 })),
+
+        b"LineNumberTable" =>
+            chain!(input,
+                   table_length: p!(be_u16) ~
+                   table: p_cut!(
+                       Error::LineNumberTable { table_length: table_length as usize },
+                       count!(c!(line_number_info), table_length as usize)),
+                   || AttributeInfo::LineNumberTable {
+                       attribute_name_index: attribute_name_index,
+                       line_number_table: table,
+                   }),
+
+        b"LocalVariableTable" =>
+            chain!(input,
+                   table_length: p!(be_u16) ~
+                   table: p_cut!(
+                       Error::LocalVariableTable { table_length: table_length as usize },
+                       count!(c!(local_variable_info), table_length as usize)),
+                   || AttributeInfo::LocalVariableTable {
+                       attribute_name_index: attribute_name_index,
+                       local_variable_table: table,
+                   }),
+
+        b"LocalVariableTypeTable" =>
+            chain!(input,
+                   table_length: p!(be_u16) ~
+                   table: p_cut!(
+                       Error::LocalVariableTypeTable { table_length: table_length as usize },
+                       count!(c!(local_variable_type_info), table_length as usize)),
+                   || AttributeInfo::LocalVariableTypeTable {
+                       attribute_name_index: attribute_name_index,
+                       local_variable_type_table: table,
+                   }),
+
+        b"Deprecated" => done!(input, AttributeInfo::Deprecated {
+            attribute_name_index: attribute_name_index,
+        }),
+
+        _ => map!(input, p!(take!(attribute_length)), |bs: Input| AttributeInfo::Unknown {
+            attribute_name_index: attribute_name_index,
+            info: bs.to_vec()
+        }),
     };
     Ok(r)
 }
@@ -535,7 +650,7 @@ fn attribute_info<'a, 'b>(input: Input<'a>, attribute_name_index: ConstantPoolIn
 fn attribute<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
                      -> ParseResult<'a, AttributeInfo> {
     p_wrap!(input, p_cut!(
-        Error::AttributeInfo,
+        Error::Attribute,
         chain!(attribute_name_index: c!(cp_index) ~
                attribute_len: p!(be_u32) ~
                attribute: c!(attribute_info, attribute_name_index, attribute_len, constant_pool),
