@@ -9,3 +9,4 @@ authors = [
 documentation = "https://maxmcc.github.io/rust-jvm"
 
 [dependencies]
+log = "*"
