@@ -22,7 +22,11 @@ pub enum Error {
     ConstantPoolInfo,
     UnknownConstantPoolTag { tag: u8 },
     ConstantPoolIndexOutOfBounds { index: usize },
-    UnexpectedConstantPoolType { expected: constant_pool::Tag, actual: constant_pool::Tag },
+    UnexpectedConstantPoolType {
+        index: usize,
+        expected: constant_pool::Tag,
+        actual: constant_pool::Tag
+    },
 
     IllegalModifiedUtf8 { byte: u8 },
     ModifiedUtf8 { length: usize },
@@ -108,6 +112,7 @@ macro_rules! check_cp_index_tag {
             None => p_fail!(Error::ConstantPoolIndexOutOfBounds { index: $i }),
             Some(r) if r.tag() == $tag => Ok(()),
             Some(r) => p_fail!(Error::UnexpectedConstantPoolType {
+                index: $i,
                 expected: $tag,
                 actual: r.tag(),
             }),
@@ -416,10 +421,9 @@ fn stack_map_frame<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
                                  || frame)))
 }
 
-fn attribute_info<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
+fn attribute_info<'a, 'b>(input: Input<'a>, attribute_name_index: ConstantPoolIndex,
+                           attribute_length: u32, constant_pool: &'b ConstantPool)
                           -> ParseResult<'a, AttributeInfo> {
-    let (input, attribute_name_index) = p_try!(input, cp_index);
-    let (input, attribute_length) = p_try!(input, p_wrap!(p!(be_u32)));
     let r = match constant_pool.get(attribute_name_index as usize) {
         None => p_fail!(Error::AttributeInfoNameIndexOutOfBounds {
             attribute_name_index: attribute_name_index as usize
@@ -519,6 +523,7 @@ fn attribute_info<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
 
 
             ref cp_entry => p_fail!(Error::UnexpectedConstantPoolType {
+                index: attribute_name_index as usize,
                 expected: constant_pool::Tag::Utf8,
                 actual: cp_entry.tag()
             }),
@@ -532,8 +537,8 @@ fn attribute<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
     p_wrap!(input, p_cut!(
         Error::AttributeInfo,
         chain!(attribute_name_index: c!(cp_index) ~
-               attribute_length: p!(be_u32) ~
-               attribute: c!(attribute_info, constant_pool),
+               attribute_len: p!(be_u32) ~
+               attribute: c!(attribute_info, attribute_name_index, attribute_len, constant_pool),
                || attribute)))
 }
 

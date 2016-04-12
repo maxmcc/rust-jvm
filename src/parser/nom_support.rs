@@ -148,30 +148,14 @@ macro_rules! c {
             $crate::std::result::Result::Err(e) => return $crate::std::result::Result::Err(e),
         }
     });
-    ($i:expr, $f:expr, $a: expr) => ({
-        match $f($i, $a) {
+    ($i:expr, $f:expr, $($arg: expr),* ) => ({
+        match $f($i, $($arg),*) {
             $crate::std::result::Result::Ok($crate::nom::IResult::Incomplete(x)) => $crate::nom::IResult::Incomplete(x),
             $crate::std::result::Result::Ok($crate::nom::IResult::Done(i, o)) => $crate::nom::IResult::Done(i, o),
             $crate::std::result::Result::Ok($crate::nom::IResult::Error(e)) => $crate::nom::IResult::Error(e),
             $crate::std::result::Result::Err(e) => return $crate::std::result::Result::Err(e),
         }
     });
-    ($i:expr, $f:expr, $a: expr, $b: expr) => ({
-        match $f($i, $a, $b) {
-            $crate::std::result::Result::Ok($crate::nom::IResult::Incomplete(x)) => $crate::nom::IResult::Incomplete(x),
-            $crate::std::result::Result::Ok($crate::nom::IResult::Done(i, o)) => $crate::nom::IResult::Done(i, o),
-            $crate::std::result::Result::Ok($crate::nom::IResult::Error(e)) => $crate::nom::IResult::Error(e),
-            $crate::std::result::Result::Err(e) => return $crate::std::result::Result::Err(e),
-        }
-    });
-    // ($i:expr, $f:expr, $($arg: expr),* ) => ({
-    //     match $f($i, $($args),*) {
-    //         $crate::std::result::Result::Ok($crate::nom::IResult::Incomplete(x)) => $crate::nom::IResult::Incomplete(x),
-    //         $crate::std::result::Result::Ok($crate::nom::IResult::Done(i, o)) => $crate::nom::IResult::Done(i, o),
-    //         $crate::std::result::Result::Ok($crate::nom::IResult::Error(e)) => $crate::nom::IResult::Error(e),
-    //         $crate::std::result::Result::Err(e) => return $crate::std::result::Result::Err(e),
-    //     }
-    // });
 }
 
 #[cfg(test)]
