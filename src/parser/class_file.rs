@@ -1,18 +1,18 @@
-use std::io::Read;
-
 use nom::{be_u8, be_u16, be_u32, ErrorKind};
 use nom;
 
+use model::class_file;
 use model::class_file::AttributeInfo;
-use model::class_file::ClassFile;
 use model::class_file::FieldInfo;
 use model::class_file::MethodInfo;
 use model::class_file::attributes;
 use model::class_file::constant_pool;
+use model::class_file::constant_pool::ConstantPool;
 use model::class_file::constant_pool::ConstantPoolInfo;
 
 pub type Input<'a> = &'a [u8];
 pub type ParseResult<'a, O> = Result<nom::IResult<Input<'a>, O, Error>, nom::Err<Input<'a>, Error>>;
+pub type ConstantPoolIndex = class_file::constant_pool_index;
 
 #[derive(Debug)]
 pub enum Error {
@@ -54,9 +54,17 @@ macro_rules! p_fail {
     ($e: expr) => (return Err($crate::nom::Err::Code(ErrorKind::Custom($e))));
 }
 
+/// Wraps a nom macro (returning `nom::IResult`) to produce a parser that does not
+/// backtrack on error.
 macro_rules! p_wrap {
-  ($i: expr, $submac: ident ! ( $($args: tt)* )) => (Ok($submac!($i, $($args)*)));
-  ($i: expr, $f: expr) => (Ok(call!($i, $f)));
+    ($i: expr, $submac: ident ! ( $($args: tt)* )) => ({
+        match $submac!($i, $($args)*) {
+            $crate::nom::IResult::Done(i, o)    => Ok($crate::nom::IResult::Done(i, o)),
+            i @ $crate::nom::IResult::Incomplete(_) => Ok(i),
+            $crate::nom::IResult::Error(e) => return $crate::std::result::Result::Err(e),
+        }
+    });
+  ($i: expr, $f: expr) => (p_wrap!($i, call!($f)));
 }
 
 macro_rules! done {
