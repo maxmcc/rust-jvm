@@ -121,17 +121,19 @@ macro_rules! as_fn_params {
 }
 
 /// Prevents backtracking out of the specified parser.
+///
+/// `cut!(nom::ErrorKind<E>, I -> IResult<I, O>) => Err<_, nom::Err> OR IResult::Done<I, O> OR IResult::Incomplete<_>`
 macro_rules! cut {
-  ($i:expr, $code:expr, $submac:ident!( $($args:tt)* )) => ({
+  ($i: expr, $code: expr, $submac:ident !( $($args:tt)* )) => ({
       let cl = || {
-        Ok($submac!($i, $($args)*))
+          Ok($submac!($i, $($args)*))
       };
 
       match cl() {
         $crate::std::result::Result::Ok($crate::nom::IResult::Incomplete(x)) => $crate::nom::IResult::Incomplete(x),
         $crate::std::result::Result::Ok($crate::nom::IResult::Done(i, o))    => $crate::nom::IResult::Done(i, o),
         $crate::std::result::Result::Ok($crate::nom::IResult::Error(e)) | $crate::std::result::Result::Err(e)  => {
-          return $crate::std::result::Result::Err($crate::nom::Err::NodePosition($code, $i, Box::new(e)))
+            return $crate::std::result::Result::Err($crate::nom::Err::NodePosition($code, $i, Box::new(e)))
         }
       }
   });

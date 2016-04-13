@@ -150,10 +150,10 @@ pub struct BootstrapMethod {
 
 #[derive(Debug)]
 pub struct InnerClass {
-    inner_class_info_index: constant_pool_index,
-    outer_class_info_index: constant_pool_index,
-    inner_name_index: constant_pool_index,
-    inner_class_access_flags: inner_class_access_flags::t,
+    pub inner_class_info_index: constant_pool_index,
+    pub outer_class_info_index: constant_pool_index,
+    pub inner_name_index: constant_pool_index,
+    pub inner_class_access_flags: inner_class_access_flags::t,
 }
 
 #[derive(Debug)]
@@ -251,62 +251,46 @@ pub enum AttributeInfo {
         signature_index: constant_pool_index,
     },
     RuntimeVisibleAnnotations {
-        attribute_name_index: constant_pool_index,
         annotations: Vec<Annotation>,
     },
     RuntimeInvisibleAnnotations {
-        attribute_name_index: constant_pool_index,
         annotations: Vec<Annotation>,
     },
     RuntimeVisibleParameterAnnotations {
-        attribute_name_index: constant_pool_index,
         parameter_annotations: Vec<Vec<Annotation>>,
     },
     RuntimeInvisibleParameterAnnotations {
-        attribute_name_index: constant_pool_index,
         parameter_annotations: Vec<Vec<Annotation>>,
     },
     RuntimeVisibleTypeAnnotations {
-        attribute_name_index: constant_pool_index,
         annotations: Vec<Annotation>,
     },
     RuntimeInvisibleTypeAnnotations {
-        attribute_name_index: constant_pool_index,
         annotations: Vec<Annotation>,
     },
     AnnotationDefault {
-        attribute_name_index: constant_pool_index,
         default_value: ElementValue,
     },
     MethodParameters {
-        attribute_name_index: constant_pool_index,
         parameters: Vec<Parameter>,
     },
 
     SourceFile {
-        attribute_name_index: constant_pool_index,
         sourcefile_index: constant_pool_index,
     },
     SourceDebugExtension {
-        attribute_name_index: constant_pool_index,
         debug_extension: Vec<u1>,
     },
     LineNumberTable {
-        attribute_name_index: constant_pool_index,
         line_number_table: Vec<LineNumberInfo>,
     },
     LocalVariableTable {
-        attribute_name_index: constant_pool_index,
         local_variable_table: Vec<LocalVariableInfo>,
     },
     LocalVariableTypeTable {
-        attribute_name_index: constant_pool_index,
         local_variable_type_table: Vec<LocalVariableTypeInfo>,
     },
-    Deprecated {
-        attribute_name_index: constant_pool_index,
-    },
-
+    Deprecated,
     Unknown {
         /// A valid index into the `constant_pool` table. The `constant_pool`
         /// entry at that index must be a valid `ConstantPoolInfo::Utf8`

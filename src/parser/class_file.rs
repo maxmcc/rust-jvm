@@ -2,9 +2,7 @@ use nom::{be_u8, be_u16, be_u32, ErrorKind};
 use nom;
 
 use model::class_file;
-use model::class_file::AttributeInfo;
-use model::class_file::FieldInfo;
-use model::class_file::MethodInfo;
+use model::class_file::{AttributeInfo, ClassFile, FieldInfo, MethodInfo};
 use model::class_file::attributes;
 use model::class_file::constant_pool;
 use model::class_file::constant_pool::ConstantPool;
@@ -53,6 +51,11 @@ pub enum Error {
     ReservedStackMapFrameTag { tag: u8 },
     VerificationTypeInfo,
     UnknownVerificationTypeInfoTag { tag: u8 },
+
+    InnerClasses { number_of_classes: usize },
+    InnerClass,
+    Signature,
+
     SourceFile,
     SourceDebugExtension,
     LineNumberTable { table_length: usize },
@@ -137,6 +140,17 @@ fn cp_index_tag<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool, tag: 
                         -> ParseResult<'a, ConstantPoolIndex> {
     let (input, i) = p_try!(input, p_wrap!(p!(be_u16)));
     try!(check_cp_index_tag!(constant_pool, i as usize, tag));
+    Ok(done!(input, i))
+}
+
+/// Parses for a constant pool index that might be zero and verifies that its
+/// the entry in the constant pool matches the specified tag.
+fn maybe_cp_index_tag<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool, tag: constant_pool::Tag)
+                              -> ParseResult<'a, ConstantPoolIndex> {
+    let (input, i) = p_try!(input, p_wrap!(p!(be_u16)));
+    if i != 0 {
+        try!(check_cp_index_tag!(constant_pool, i as usize, tag));
+    }
     Ok(done!(input, i))
 }
 
@@ -319,7 +333,7 @@ fn exception_table<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
         chain!(start_pc: p!(be_u16) ~
                end_pc: p!(be_u16) ~
                handler_pc: p!(be_u16) ~
-               catch_type: c!(cp_index_tag, constant_pool, constant_pool::Tag::Class),
+               catch_type: c!(maybe_cp_index_tag, constant_pool, constant_pool::Tag::Class),
                || attributes::ExceptionTableEntry {
                    start_pc: start_pc,
                    end_pc: end_pc,
@@ -428,10 +442,11 @@ fn stack_map_frame_info<'a, 'b>(input: Input<'a>, tag: attributes::stack_map_fra
 
 fn stack_map_frame<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
                            -> ParseResult<'a, attributes::StackMapFrame> {
-    p_wrap!(input, p_cut!(Error::StackMapFrame,
-                          chain!(tag: map!(p!(be_u8), attributes::stack_map_frame::Tag::from) ~
-                                 frame: c!(stack_map_frame_info, tag, constant_pool),
-                                 || frame)))
+    p_wrap!(input, p_cut!(
+        Error::StackMapFrame,
+        chain!(tag: map!(p!(be_u8), attributes::stack_map_frame::Tag::from) ~
+               frame: c!(stack_map_frame_info, tag, constant_pool),
+               || frame)))
 }
 
 n!(line_number_info<Input, attributes::LineNumberInfo, Error>, p_cut!(
@@ -508,6 +523,24 @@ fn attribute_info<'a, 'b>(input: Input<'a>, attribute_name_index: ConstantPoolIn
     Ok(r)
 }
 
+fn inner_class<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
+                       -> ParseResult<'a, attributes::InnerClass> {
+    let r = p_cut!(
+        input,
+        Error::InnerClass,
+        chain!(inner_class_info_index: c!(cp_index_tag, constant_pool, constant_pool::Tag::Class) ~
+               outer_class_info_index: c!(maybe_cp_index_tag, constant_pool, constant_pool::Tag::Class) ~
+               inner_name_index: c!(maybe_cp_index_tag, constant_pool, constant_pool::Tag::Utf8) ~
+               inner_class_access_flags: p!(be_u16),
+               || attributes::InnerClass {
+                   inner_class_info_index: inner_class_info_index,
+                   outer_class_info_index: outer_class_info_index,
+                   inner_name_index: inner_name_index,
+                   inner_class_access_flags: inner_class_access_flags,
+               }));
+    Ok(r)
+}
+
 fn attribute_info_switch<'a, 'b>(input: Input<'a>, attribute_name: &[u8],
                                  attribute_name_index: ConstantPoolIndex, attribute_length: u32,
                                  constant_pool: &'b ConstantPool)
@@ -549,7 +582,7 @@ fn attribute_info_switch<'a, 'b>(input: Input<'a>, attribute_name: &[u8],
                    count: p!(be_u16) ~
                    entries: p_cut!(
                        Error::StackMapTable { number_of_entries: count as usize },
-                       count!(c!(stack_map_frame, &constant_pool), count as usize)),
+                       count!(c!(stack_map_frame, constant_pool), count as usize)),
                    || AttributeInfo::StackMapTable { entries: entries }),
 
         b"Exceptions" =>
@@ -562,13 +595,31 @@ fn attribute_info_switch<'a, 'b>(input: Input<'a>, attribute_name: &[u8],
                        exception_index_table: exception_index_table,
                    }),
 
-        b"InnerClasses" => unimplemented!(),
+        b"InnerClasses" =>
+            chain!(input,
+                   number_of_classes: p!(be_u16) ~
+                   classes: p_cut!(
+                       Error::InnerClasses { number_of_classes: number_of_classes as usize },
+                       count!(c!(inner_class, constant_pool), number_of_classes as usize)),
+                   || AttributeInfo::InnerClasses { classes: classes }),
 
-        b"EnclosingMethod" => unimplemented!(),
+        b"EnclosingMethod" =>
+            chain!(input,
+                   class_index: c!(cp_index_tag, constant_pool, constant_pool::Tag::Class) ~
+                   method_index: c!(cp_index_tag, constant_pool, constant_pool::Tag::NameAndType),
+                   || AttributeInfo::EnclosingMethod {
+                       class_index: class_index,
+                       method_index: method_index,
+                   }),
 
-        b"Synthetic" => unimplemented!(),
+        b"Synthetic" => done!(input, AttributeInfo::Synthetic),
 
-        b"Signature" => unimplemented!(),
+        b"Signature" => p_cut!(
+            input, Error::Signature,
+            map!(c!(cp_index_tag, constant_pool, constant_pool::Tag::Utf8),
+                 |si| AttributeInfo::Signature {
+                     signature_index: si
+                 })),
 
         b"RuntimeVisibleAnnotations" => unimplemented!(),
 
@@ -589,7 +640,6 @@ fn attribute_info_switch<'a, 'b>(input: Input<'a>, attribute_name: &[u8],
         b"SourceFile" =>
             map!(input, c!(cp_index_tag, constant_pool, constant_pool::Tag::Utf8),
                  |si| AttributeInfo::SourceFile {
-                     attribute_name_index: attribute_name_index,
                      sourcefile_index: si
                  }),
 
@@ -598,7 +648,6 @@ fn attribute_info_switch<'a, 'b>(input: Input<'a>, attribute_name: &[u8],
             Error::SourceDebugExtension,
             map!(p!(take!(attribute_length)),
                  |bs: Input| AttributeInfo::SourceDebugExtension {
-                     attribute_name_index: attribute_name_index,
                      debug_extension: bs.to_vec(),
                  })),
 
@@ -609,7 +658,6 @@ fn attribute_info_switch<'a, 'b>(input: Input<'a>, attribute_name: &[u8],
                        Error::LineNumberTable { table_length: table_length as usize },
                        count!(c!(line_number_info), table_length as usize)),
                    || AttributeInfo::LineNumberTable {
-                       attribute_name_index: attribute_name_index,
                        line_number_table: table,
                    }),
 
@@ -620,7 +668,6 @@ fn attribute_info_switch<'a, 'b>(input: Input<'a>, attribute_name: &[u8],
                        Error::LocalVariableTable { table_length: table_length as usize },
                        count!(c!(local_variable_info), table_length as usize)),
                    || AttributeInfo::LocalVariableTable {
-                       attribute_name_index: attribute_name_index,
                        local_variable_table: table,
                    }),
 
@@ -631,13 +678,10 @@ fn attribute_info_switch<'a, 'b>(input: Input<'a>, attribute_name: &[u8],
                        Error::LocalVariableTypeTable { table_length: table_length as usize },
                        count!(c!(local_variable_type_info), table_length as usize)),
                    || AttributeInfo::LocalVariableTypeTable {
-                       attribute_name_index: attribute_name_index,
                        local_variable_type_table: table,
                    }),
 
-        b"Deprecated" => done!(input, AttributeInfo::Deprecated {
-            attribute_name_index: attribute_name_index,
-        }),
+        b"Deprecated" => done!(input, AttributeInfo::Deprecated),
 
         _ => map!(input, p!(take!(attribute_length)), |bs: Input| AttributeInfo::Unknown {
             attribute_name_index: attribute_name_index,
@@ -696,7 +740,7 @@ fn method<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
 }
 
 
-n!(pub parse_class_file<Input, i32, Error>, p_cut!(
+n!(pub parse_class_file<Input, ClassFile, Error>, p_cut!(
     Error::ClassFile,
     chain!(c!(magic) ~
            minor_version: p!(be_u16) ~
@@ -709,8 +753,8 @@ n!(pub parse_class_file<Input, i32, Error>, p_cut!(
                map!(count!(c!(cp_info), constant_pool_count as usize - 1),
                     ConstantPool::from_zero_indexed_vec)) ~
            access_flags: p!(be_u16) ~
-           this_class: c!(cp_index) ~
-           super_class: c!(cp_index) ~
+           this_class: c!(cp_index_tag, &constant_pool, constant_pool::Tag::Class) ~
+           super_class: c!(maybe_cp_index_tag, &constant_pool, constant_pool::Tag::Class) ~
            interfaces_count: p!(be_u16) ~
            interfaces: p_cut!(Error::Interfaces { interfaces_count: interfaces_count as usize },
                               count!(c!(cp_index), interfaces_count as usize)) ~
@@ -724,7 +768,18 @@ n!(pub parse_class_file<Input, i32, Error>, p_cut!(
            attributes: p_cut!(
                Error::ClassAttributes { attributes_count: attributes_count as usize },
                count!(c!(attribute, &constant_pool), attributes_count as usize)),
-           || { 17 })));
+           || ClassFile {
+               minor_version: minor_version,
+               major_version: major_version,
+               constant_pool: constant_pool,
+               access_flags: access_flags,
+               this_class: this_class,
+               super_class: super_class,
+               interfaces: interfaces,
+               fields: fields,
+               methods: methods,
+               attributes: attributes,
+           })));
 
 #[cfg(test)]
 mod test {
