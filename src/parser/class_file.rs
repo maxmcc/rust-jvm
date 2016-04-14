@@ -55,6 +55,19 @@ pub enum Error {
     InnerClasses { number_of_classes: usize },
     InnerClass,
     Signature,
+    MethodParameters { parameters_count: usize },
+    MethodParameter,
+    ElementValuePair,
+    ElementValuePairs { num_element_value_pairs: usize },
+    ElementValue,
+    UnknownElementValueTag { tag: u8 },
+    ElementValueArray { num_values: usize },
+    Annotations { num_annotations: usize },
+    ParameterAnnotations { num_parameters: usize },
+    TypeAnnotations { num_annotations: usize },
+    UnknownTargetTypeTag { tag: u8 },
+    LocalVariableTarget { table_length: usize },
+    TypePath { path_length: usize},
 
     SourceFile,
     SourceDebugExtension,
@@ -75,21 +88,46 @@ macro_rules! p_cut {
     ($i: expr, $err: expr, $f: expr) => (cut!($i, $err, call!($f)));
 }
 
-macro_rules! p_fail {
-    ($e: expr) => (return Err($crate::nom::Err::Code(ErrorKind::Custom($e))));
+macro_rules! p_nom_error {
+    ($e: expr) => ($crate::nom::IResult::Error(custom_error!($e)));
 }
 
-/// Wraps a nom macro (returning `nom::IResult`) to produce a parser that does not
-/// backtrack on error.
-macro_rules! p_wrap {
-    ($i: expr, $submac: ident ! ( $($args: tt)* )) => ({
-        match $submac!($i, $($args)*) {
-            $crate::nom::IResult::Done(i, o)    => Ok($crate::nom::IResult::Done(i, o)),
+macro_rules! custom_error {
+    ($e: expr) => ($crate::nom::Err::Code($crate::nom::ErrorKind::Custom($e)));
+}
+
+macro_rules! p_fail {
+    ($e: expr) => (return Err(custom_error!($e)));
+}
+
+/// Unwraps the result of a backtracking-controllable parser.
+macro_rules! p_unwrap {
+   ($r: expr) => ({
+        match $r {
+            Ok($crate::nom::IResult::Done(i, o)) => (i, o),
+            Ok($crate::nom::IResult::Incomplete(n)) => return Ok($crate::nom::IResult::Incomplete(n)),
+            Ok($crate::nom::IResult::Error(e)) => return Ok($crate::nom::IResult::Error(e)),
+            Err(e) => return Err(e),
+        }
+    })
+}
+
+/// Wraps the result of a nom parser (`nom::IResult`).
+macro_rules! wrap_nom {
+    ($r: expr) => ({
+        match $r {
+            $crate::nom::IResult::Done(i, o) => Ok($crate::nom::IResult::Done(i, o)),
             i @ $crate::nom::IResult::Incomplete(_) => Ok(i),
             $crate::nom::IResult::Error(e) => return $crate::std::result::Result::Err(e),
         }
-    });
-  ($i: expr, $f: expr) => (p_wrap!($i, call!($f)));
+    })
+}
+
+/// Wraps a nom parser (returning `nom::IResult`) to produce a parser that does not
+/// backtrack on error.
+macro_rules! p_wrap_nom {
+    ($i: expr, $submac: ident ! ( $($args: tt)* )) => (wrap_nom!($submac!($i, $($args)*)));
+    ($i: expr, $f: expr) => (p_wrap_nom!($i, call!($f)));
 }
 
 macro_rules! done {
@@ -138,7 +176,7 @@ macro_rules! check_cp_index_tag {
 /// constant pool matches the specified tag.
 fn cp_index_tag<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool, tag: constant_pool::Tag)
                         -> ParseResult<'a, ConstantPoolIndex> {
-    let (input, i) = p_try!(input, p_wrap!(p!(be_u16)));
+    let (input, i) = p_try!(input, p_wrap_nom!(p!(be_u16)));
     try!(check_cp_index_tag!(constant_pool, i as usize, tag));
     Ok(done!(input, i))
 }
@@ -147,7 +185,7 @@ fn cp_index_tag<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool, tag: 
 /// the entry in the constant pool matches the specified tag.
 fn maybe_cp_index_tag<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool, tag: constant_pool::Tag)
                               -> ParseResult<'a, ConstantPoolIndex> {
-    let (input, i) = p_try!(input, p_wrap!(p!(be_u16)));
+    let (input, i) = p_try!(input, p_wrap_nom!(p!(be_u16)));
     if i != 0 {
         try!(check_cp_index_tag!(constant_pool, i as usize, tag));
     }
@@ -226,7 +264,7 @@ fn reference(input: Input, tag: constant_pool::reference_kind::Tag)
         constant_pool::reference_kind::Tag::Unknown(t) =>
             p_fail!(Error::UnknownConstantPoolMethodReferenceTag { tag: t }),
     };
-    Ok(r)
+    wrap_nom!(r)
 }
 
 fn cp_info_info(input: Input, tag: constant_pool::Tag) -> ParseResult<ConstantPoolInfo> {
@@ -266,6 +304,7 @@ fn cp_info_info(input: Input, tag: constant_pool::Tag) -> ParseResult<ConstantPo
 
         constant_pool::Tag::Float => map!(input, p!(be_u32),
                                           |bs| ConstantPoolInfo::Float { bytes: bs }),
+
         constant_pool::Tag::Long => chain!(input,
                                            hi: p!(be_u32) ~
                                            lo: p!(be_u32),
@@ -315,9 +354,9 @@ fn cp_info_info(input: Input, tag: constant_pool::Tag) -> ParseResult<ConstantPo
                                                         name_and_type_index: nti,
                                                     }),
 
-        constant_pool::Tag::Unknown(t) => p_fail!(Error::UnknownConstantPoolTag { tag: t }),
+        constant_pool::Tag::Unknown(t) => p_nom_error!(Error::UnknownConstantPoolTag { tag: t }),
     };
-    Ok(r)
+    wrap_nom!(r)
 }
 
 n!(cp_info<Input, ConstantPoolInfo, Error>, p_cut!(
@@ -328,7 +367,8 @@ n!(cp_info<Input, ConstantPoolInfo, Error>, p_cut!(
 
 fn exception_table<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
                            -> ParseResult<'a, attributes::ExceptionTableEntry> {
-    p_wrap!(input, p_cut!(
+    let r = p_cut!(
+        input,
         Error::ExceptionTableEntry,
         chain!(start_pc: p!(be_u16) ~
                end_pc: p!(be_u16) ~
@@ -339,7 +379,8 @@ fn exception_table<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
                    end_pc: end_pc,
                    handler_pc: handler_pc,
                    catch_type: catch_type,
-               })))
+               }));
+    Ok(r)
     }
 
 n!(verification_type_info_tag<Input, attributes::stack_map_frame::verification_type_info::Tag, Error>,
@@ -372,7 +413,7 @@ fn verification_type_info<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantP
         };
         Ok(r)
     };
-    p_wrap!(input, p_cut!(Error::VerificationTypeInfo, c!(action)))
+    p_wrap_nom!(input, p_cut!(Error::VerificationTypeInfo, c!(action)))
 }
 
 fn stack_map_frame_info<'a, 'b>(input: Input<'a>, tag: attributes::stack_map_frame::Tag,
@@ -442,7 +483,7 @@ fn stack_map_frame_info<'a, 'b>(input: Input<'a>, tag: attributes::stack_map_fra
 
 fn stack_map_frame<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
                            -> ParseResult<'a, attributes::StackMapFrame> {
-    p_wrap!(input, p_cut!(
+    p_wrap_nom!(input, p_cut!(
         Error::StackMapFrame,
         chain!(tag: map!(p!(be_u8), attributes::stack_map_frame::Tag::from) ~
                frame: c!(stack_map_frame_info, tag, constant_pool),
@@ -525,7 +566,7 @@ fn attribute_info<'a, 'b>(input: Input<'a>, attribute_name_index: ConstantPoolIn
 
 fn inner_class<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
                        -> ParseResult<'a, attributes::InnerClass> {
-    let r = p_cut!(
+    wrap_nom!(p_cut!(
         input,
         Error::InnerClass,
         chain!(inner_class_info_index: c!(cp_index_tag, constant_pool, constant_pool::Tag::Class) ~
@@ -537,8 +578,238 @@ fn inner_class<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
                    outer_class_info_index: outer_class_info_index,
                    inner_name_index: inner_name_index,
                    inner_class_access_flags: inner_class_access_flags,
-               }));
-    Ok(r)
+               })))
+}
+
+fn method_parameter<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
+                            -> ParseResult<'a, attributes::MethodParameter> {
+    wrap_nom!(p_cut!(
+        input,
+        Error::MethodParameter,
+        chain!(name_index: c!(maybe_cp_index_tag, constant_pool, constant_pool::Tag::Utf8) ~
+               access_flags: p!(be_u16),
+               || attributes::MethodParameter {
+                   name_index: name_index,
+                   access_flags: access_flags,
+               })))
+}
+
+fn element_value_pair<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
+                              -> ParseResult<'a, attributes::ElementValuePair> {
+    wrap_nom!(p_cut!(input,
+                     Error::ElementValuePair,
+                     chain!(eni: c!(cp_index_tag, constant_pool, constant_pool::Tag::Utf8) ~
+                            value: c!(element_value, constant_pool),
+                            || attributes::ElementValuePair {
+                                element_name_index: eni,
+                                value: value,
+                            })))
+}
+
+fn element_value_pairs<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
+                               -> ParseResult<'a, Vec<attributes::ElementValuePair>> {
+    wrap_nom!(
+        chain!(input,
+               num_pairs: p!(be_u16) ~
+               element_value_pairs: p_cut!(
+                   Error::ElementValuePairs { num_element_value_pairs: num_pairs as usize },
+                   count!(c!(element_value_pair, constant_pool), num_pairs as usize)),
+               || element_value_pairs))
+}
+
+fn element_value<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
+                         -> ParseResult<'a, attributes::ElementValue> {
+    use model::class_file::attributes::element_value::Tag;
+    use model::class_file::attributes::ElementValue;
+    let (input, tag) = p_unwrap!(wrap_nom!(p_cut!(
+        input,
+        Error::ElementValue,
+        map!(p!(be_u8), Tag::from))));
+    let r = match tag {
+        Tag::Byte => map!(input, c!(cp_index_tag, constant_pool, constant_pool::Tag::Integer),
+                          |i| ElementValue::Byte { const_value_index: i }),
+
+        Tag::Char => map!(input, c!(cp_index_tag, constant_pool, constant_pool::Tag::Integer),
+                          |i| ElementValue::Char { const_value_index: i }),
+
+        Tag::Double => map!(input, c!(cp_index_tag, constant_pool, constant_pool::Tag::Double),
+                            |i| ElementValue::Double { const_value_index: i }),
+
+        Tag::Float => map!(input, c!(cp_index_tag, constant_pool, constant_pool::Tag::Float),
+                           |i| ElementValue::Float { const_value_index: i }),
+
+        Tag::Int => map!(input, c!(cp_index_tag, constant_pool, constant_pool::Tag::Integer),
+                         |i| ElementValue::Int { const_value_index: i }),
+
+        Tag::Long => map!(input, c!(cp_index_tag, constant_pool, constant_pool::Tag::Long),
+                          |i| ElementValue::Long { const_value_index: i }),
+
+        Tag::Short => map!(input, c!(cp_index_tag, constant_pool, constant_pool::Tag::Integer),
+                           |i| ElementValue::Short { const_value_index: i }),
+
+        Tag::Boolean => map!(input, c!(cp_index_tag, constant_pool, constant_pool::Tag::Integer),
+                             |i| ElementValue::Boolean { const_value_index: i }),
+
+        Tag::String => map!(input, c!(cp_index_tag, constant_pool, constant_pool::Tag::Utf8),
+                            |i| ElementValue::String { const_value_index: i }),
+
+        Tag::Enum => chain!(input,
+                            tni: c!(cp_index_tag, constant_pool, constant_pool::Tag::Utf8) ~
+                            cni: c!(cp_index_tag, constant_pool, constant_pool::Tag::Utf8),
+                            || ElementValue::Enum {
+                                type_name_index: tni,
+                                const_name_index: cni,
+                            }),
+
+        Tag::Class => map!(input, c!(cp_index_tag, constant_pool, constant_pool::Tag::Utf8),
+                           |i| ElementValue::Class { class_info_index: i }),
+
+        Tag::Annotation => map!(input, c!(annotation, constant_pool),
+                                |a| ElementValue::Annotation { annotation_value: a }),
+
+        Tag::Array => chain!(input,
+                             num_values: p!(be_u16) ~
+                             values: p_cut!(
+                                 Error::ElementValueArray { num_values: num_values as usize },
+                                 count!(c!(element_value, constant_pool), num_values as usize)),
+                             || ElementValue::Array { values: values }),
+
+        Tag::Unknown(t) => p_fail!(Error::UnknownElementValueTag { tag: t }),
+    };
+    wrap_nom!(r)
+}
+
+fn annotation<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
+                      -> ParseResult<'a, attributes::Annotation> {
+    wrap_nom!(
+        chain!(input,
+               type_index: c!(cp_index_tag, constant_pool, constant_pool::Tag::Utf8) ~
+               element_value_pairs: c!(element_value_pairs, constant_pool),
+               || attributes::Annotation {
+                   type_index: type_index,
+                   element_value_pairs: element_value_pairs,
+               }))
+}
+
+fn annotations<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
+                       -> ParseResult<'a, Vec<attributes::Annotation>> {
+    wrap_nom!(
+        chain!(input,
+               num_annots: p!(be_u16) ~
+               annotations: p_cut!(Error::Annotations { num_annotations: num_annots as usize },
+                                   count!(c!(annotation, constant_pool), num_annots as usize)),
+               || annotations))
+}
+
+fn parameter_annotations<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
+                                 -> ParseResult<'a, Vec<Vec<attributes::Annotation>>> {
+    p_wrap_nom!(
+        input,
+        chain!(num_parameters: p!(be_u16) ~
+               parameter_annotations: p_cut!(
+                   Error::ParameterAnnotations { num_parameters: num_parameters as usize },
+                   count!(c!(annotations, constant_pool), num_parameters as usize)),
+               || parameter_annotations))
+}
+
+fn target_info(input: Input) -> ParseResult<attributes::TargetInfo> {
+    use model::class_file::attributes::target_type::Tag;
+    use model::class_file::attributes::TargetInfo;
+    use model::class_file::attributes::LocalVariableTargetInfo;
+    let (input, tag) = p_try!(input, p_wrap_nom!(map!(p!(be_u8), Tag::from)));
+    let r = match tag {
+        Tag::TypeParameter =>
+            map!(input, p!(be_u8), |i| TargetInfo::TypeParameter { type_parameter_index: i }),
+
+        Tag::Supertype =>
+            map!(input, p!(be_u16), |i| TargetInfo::Supertype { supertype_index: i }),
+
+        Tag::TypeParameterBound =>
+            chain!(input,
+                   type_parameter_index: p!(be_u8) ~
+                   bound_index: p!(be_u8),
+                   || TargetInfo::TypeParameterBound {
+                       type_parameter_index: type_parameter_index,
+                       bound_index: bound_index,
+                   }),
+
+        Tag::Empty => done!(input, TargetInfo::Empty),
+
+        Tag::FormalParameter =>
+            map!(input, p!(be_u8), |i| TargetInfo::FormalParameter { formal_parameter_index: i }),
+
+        Tag::Throws => map!(input, p!(be_u16), |i| TargetInfo::Throws { throws_type_index: i }),
+
+        Tag::LocalVariable =>
+            chain!(input,
+                   table_length: p!(be_u16) ~
+                   table: p_cut!(
+                       Error::LocalVariableTarget { table_length: table_length as usize },
+                       count!(chain!(start_pc: p!(be_u16) ~
+                                     length: p!(be_u16) ~
+                                     index: p!(be_u16),
+                                     || LocalVariableTargetInfo {
+                                         start_pc: start_pc,
+                                         length: length,
+                                         index: index,
+                                     }),
+                              table_length as usize)),
+                   || TargetInfo::LocalVariable { table: table }),
+
+        Tag::Catch => map!(input, p!(be_u16), |i| TargetInfo::Catch { exception_table_index: i }),
+
+        Tag::Offset => map!(input, p!(be_u16), |i| TargetInfo::Offset { offset: i }),
+
+        Tag::TypeArgument => chain!(input,
+                                    offset: p!(be_u16) ~
+                                    type_argument_index: p!(be_u8),
+                                    || TargetInfo::TypeArgument{
+                                        offset: offset,
+                                        type_argument_index: type_argument_index,
+                                    }),
+        Tag::Unknown(t) => p_fail!(Error::UnknownTargetTypeTag { tag: t }),
+    };
+    wrap_nom!(r)
+}
+
+n!(type_path<Input, attributes::TypePath, Error>, chain!(
+    path_length: p!(be_u8) ~
+    path: p_cut!(
+        Error::TypePath { path_length: path_length as usize },
+        count!(chain!(type_path_kind: p!(be_u8) ~
+                      type_argument_index: p!(be_u8),
+                      || attributes::TypePathPart {
+                          type_path_kind: type_path_kind,
+                          type_argument_index: type_argument_index,
+                      }),
+               path_length as usize)),
+    || attributes::TypePath { path: path }));
+
+fn type_annotation<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
+                           -> ParseResult<'a, attributes::TypeAnnotation> {
+    p_wrap_nom!(
+        input,
+        chain!(target_info: c!(target_info) ~
+               target_path: c!(type_path) ~
+               type_index: c!(cp_index_tag, constant_pool, constant_pool::Tag::Utf8) ~
+               element_value_pairs: c!(element_value_pairs, constant_pool),
+               || attributes::TypeAnnotation {
+                   target_info: target_info,
+                   target_path: target_path,
+                   type_index: type_index,
+                   element_value_pairs: element_value_pairs,
+               }))
+}
+
+fn type_annotations<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
+                            -> ParseResult<'a, Vec<attributes::TypeAnnotation>> {
+    p_wrap_nom!(
+        input,
+        chain!(num_annotations: p!(be_u16) ~
+               type_annotations: p_cut!(
+                   Error::TypeAnnotations { num_annotations: num_annotations as usize },
+                   count!(c!(type_annotation, constant_pool), num_annotations as usize)),
+               || type_annotations))
 }
 
 fn attribute_info_switch<'a, 'b>(input: Input<'a>, attribute_name: &[u8],
@@ -621,21 +892,48 @@ fn attribute_info_switch<'a, 'b>(input: Input<'a>, attribute_name: &[u8],
                      signature_index: si
                  })),
 
-        b"RuntimeVisibleAnnotations" => unimplemented!(),
+        b"RuntimeVisibleAnnotations" =>
+            map!(input, c!(annotations, constant_pool),
+                 |annots| AttributeInfo::RuntimeVisibleAnnotations { annotations: annots }),
 
-        b"RuntimeInvisibleAnnotations" => unimplemented!(),
+        b"RuntimeInvisibleAnnotations" =>
+            map!(input, c!(annotations, constant_pool),
+                 |annots| AttributeInfo::RuntimeInvisibleAnnotations { annotations: annots }),
 
-        b"RuntimeVisibleParameterAnnotations" => unimplemented!(),
+        b"RuntimeVisibleParameterAnnotations" =>
+            map!(input, c!(parameter_annotations, constant_pool),
+                 |param_annots| AttributeInfo::RuntimeVisibleParameterAnnotations {
+                     parameter_annotations: param_annots,
+                 }),
 
-        b"RuntimeInvisibleParameterAnnotations" => unimplemented!(),
+        b"RuntimeInvisibleParameterAnnotations" =>
+            map!(input, c!(parameter_annotations, constant_pool),
+                 |param_annots| AttributeInfo::RuntimeInvisibleParameterAnnotations {
+                     parameter_annotations: param_annots,
+                 }),
 
-        b"RuntimeVisibleTypeAnnotations" => unimplemented!(),
+        b"RuntimeVisibleTypeAnnotations" =>
+            map!(input, c!(type_annotations, constant_pool),
+                 |type_annots| AttributeInfo::RuntimeVisibleTypeAnnotations {
+                     annotations: type_annots,
+                 }),
 
-        b"RuntimeInvisibleTypeAnnotations" => unimplemented!(),
+        b"RuntimeInvisibleTypeAnnotations" =>
+            map!(input, c!(type_annotations, constant_pool),
+                 |type_annots| AttributeInfo::RuntimeInvisibleTypeAnnotations {
+                     annotations: type_annots,
+                 }),
 
-        b"AnnotationDefault" => unimplemented!(),
+        b"AnnotationDefault" => map!(input, c!(element_value, constant_pool),
+                                     |ev| AttributeInfo::AnnotationDefault { default_value: ev } ),
 
-        b"MethodParameters" => unimplemented!(),
+        b"MethodParameters" =>
+            chain!(input,
+                   parameters_count: p!(be_u16) ~
+                   parameters: p_cut!(
+                       Error::MethodParameters { parameters_count: parameters_count as usize },
+                       count!(c!(method_parameter, constant_pool), parameters_count as usize)),
+                   || AttributeInfo::MethodParameters { parameters: parameters }),
 
         b"SourceFile" =>
             map!(input, c!(cp_index_tag, constant_pool, constant_pool::Tag::Utf8),
@@ -693,7 +991,7 @@ fn attribute_info_switch<'a, 'b>(input: Input<'a>, attribute_name: &[u8],
 
 fn attribute<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
                      -> ParseResult<'a, AttributeInfo> {
-    p_wrap!(input, p_cut!(
+    p_wrap_nom!(input, p_cut!(
         Error::Attribute,
         chain!(attribute_name_index: c!(cp_index) ~
                attribute_len: p!(be_u32) ~
@@ -703,7 +1001,7 @@ fn attribute<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
 
 fn field<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
                  -> ParseResult<'a, FieldInfo> {
-    p_wrap!(input, p_cut!(
+    p_wrap_nom!(input, p_cut!(
         Error::FieldInfo,
         chain!(access_flags: p!(be_u16) ~
                name_index: c!(cp_index) ~
@@ -722,7 +1020,7 @@ fn field<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
 
 fn method<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
                  -> ParseResult<'a, MethodInfo> {
-    p_wrap!(input, p_cut!(
+    p_wrap_nom!(input, p_cut!(
         Error::MethodInfo,
         chain!(access_flags: p!(be_u16) ~
                name_index: c!(cp_index) ~
@@ -740,6 +1038,7 @@ fn method<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
 }
 
 
+/// Parses a Java class file `parser::class_file::parse_class_file`.
 n!(pub parse_class_file<Input, ClassFile, Error>, p_cut!(
     Error::ClassFile,
     chain!(c!(magic) ~
