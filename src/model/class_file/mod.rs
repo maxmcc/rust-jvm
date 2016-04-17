@@ -1,3 +1,6 @@
+//! Structures for the [Java SE 8 JVM class file
+//! format](https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html).
+
 pub mod access_flags;
 pub mod attributes;
 pub mod constant_pool;
@@ -9,13 +12,19 @@ pub use self::attributes::AttributeInfo;
 pub use self::constant_pool::ConstantPoolInfo;
 pub use self::constant_pool::ConstantPool;
 
+/// Represents an unsigned one-byte quantity.
 #[allow(non_camel_case_types)]
 pub type u1 = u8;
+
+/// Represents an unsigned two-byte quantity.
 #[allow(non_camel_case_types)]
 pub type u2 = u16;
+
+/// Represents an unsigned four-byte quantity.
 #[allow(non_camel_case_types)]
 pub type u4 = u32;
 
+/// Represents an index into the constant pool.
 #[allow(non_camel_case_types)]
 pub type constant_pool_index = constant_pool::constant_pool_index;
 

@@ -387,7 +387,7 @@ n!(verification_type_info_tag<Input, attributes::stack_map_frame::verification_t
    map!(p!(be_u8), attributes::stack_map_frame::verification_type_info::Tag::from));
 
 fn verification_type_info<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
-                                  -> ParseResult<'a, attributes::VerificationTypeInfo> {
+                                  -> ParseResult<'a, attributes::stack_map_frame::VerificationTypeInfo> {
     use model::class_file::attributes::stack_map_frame::verification_type_info::Tag;
     use model::class_file::attributes::stack_map_frame::VerificationTypeInfo;
     let action = |input| {
@@ -595,19 +595,19 @@ fn method_parameter<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
 }
 
 fn element_value_pair<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
-                              -> ParseResult<'a, attributes::ElementValuePair> {
+                              -> ParseResult<'a, attributes::annotations::ElementValuePair> {
     wrap_nom!(p_cut!(input,
                      Error::ElementValuePair,
                      chain!(eni: c!(cp_index_tag, constant_pool, constant_pool::Tag::Utf8) ~
                             value: c!(element_value, constant_pool),
-                            || attributes::ElementValuePair {
+                            || attributes::annotations::ElementValuePair {
                                 element_name_index: eni,
                                 value: value,
                             })))
 }
 
 fn element_value_pairs<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
-                               -> ParseResult<'a, Vec<attributes::ElementValuePair>> {
+                               -> ParseResult<'a, Vec<attributes::annotations::ElementValuePair>> {
     wrap_nom!(
         chain!(input,
                num_pairs: p!(be_u16) ~
@@ -618,9 +618,9 @@ fn element_value_pairs<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool
 }
 
 fn element_value<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
-                         -> ParseResult<'a, attributes::ElementValue> {
-    use model::class_file::attributes::element_value::Tag;
-    use model::class_file::attributes::ElementValue;
+                         -> ParseResult<'a, attributes::annotations::ElementValue> {
+    use model::class_file::attributes::annotations::element_value::Tag;
+    use model::class_file::attributes::annotations::ElementValue;
     let (input, tag) = p_unwrap!(wrap_nom!(p_cut!(
         input,
         Error::ElementValue,
@@ -680,19 +680,19 @@ fn element_value<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
 }
 
 fn annotation<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
-                      -> ParseResult<'a, attributes::Annotation> {
+                      -> ParseResult<'a, attributes::annotations::Annotation> {
     wrap_nom!(
         chain!(input,
                type_index: c!(cp_index_tag, constant_pool, constant_pool::Tag::Utf8) ~
                element_value_pairs: c!(element_value_pairs, constant_pool),
-               || attributes::Annotation {
+               || attributes::annotations::Annotation {
                    type_index: type_index,
                    element_value_pairs: element_value_pairs,
                }))
 }
 
 fn annotations<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
-                       -> ParseResult<'a, Vec<attributes::Annotation>> {
+                       -> ParseResult<'a, Vec<attributes::annotations::Annotation>> {
     wrap_nom!(
         chain!(input,
                num_annots: p!(be_u16) ~
@@ -702,7 +702,7 @@ fn annotations<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
 }
 
 fn parameter_annotations<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
-                                 -> ParseResult<'a, Vec<Vec<attributes::Annotation>>> {
+                                 -> ParseResult<'a, Vec<Vec<attributes::annotations::Annotation>>> {
     p_wrap_nom!(
         input,
         chain!(num_parameters: p!(be_u16) ~
@@ -712,10 +712,10 @@ fn parameter_annotations<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPo
                || parameter_annotations))
 }
 
-fn target_info(input: Input) -> ParseResult<attributes::TargetInfo> {
-    use model::class_file::attributes::target_type::Tag;
-    use model::class_file::attributes::TargetInfo;
-    use model::class_file::attributes::LocalVariableTargetInfo;
+fn target_info(input: Input) -> ParseResult<attributes::annotations::TargetInfo> {
+    use model::class_file::attributes::annotations::target_type::Tag;
+    use model::class_file::attributes::annotations::TargetInfo;
+    use model::class_file::attributes::annotations::LocalVariableTargetInfo;
     let (input, tag) = p_try!(input, p_wrap_nom!(map!(p!(be_u8), Tag::from)));
     let r = match tag {
         Tag::TypeParameter =>
@@ -772,28 +772,28 @@ fn target_info(input: Input) -> ParseResult<attributes::TargetInfo> {
     wrap_nom!(r)
 }
 
-n!(type_path<Input, attributes::TypePath, Error>, chain!(
+n!(type_path<Input, attributes::annotations::TypePath, Error>, chain!(
     path_length: p!(be_u8) ~
     path: p_cut!(
         Error::TypePath { path_length: path_length as usize },
         count!(chain!(type_path_kind: p!(be_u8) ~
                       type_argument_index: p!(be_u8),
-                      || attributes::TypePathPart {
+                      || attributes::annotations::TypePathPart {
                           type_path_kind: type_path_kind,
                           type_argument_index: type_argument_index,
                       }),
                path_length as usize)),
-    || attributes::TypePath { path: path }));
+    || attributes::annotations::TypePath { path: path }));
 
 fn type_annotation<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
-                           -> ParseResult<'a, attributes::TypeAnnotation> {
+                           -> ParseResult<'a, attributes::annotations::TypeAnnotation> {
     p_wrap_nom!(
         input,
         chain!(target_info: c!(target_info) ~
                target_path: c!(type_path) ~
                type_index: c!(cp_index_tag, constant_pool, constant_pool::Tag::Utf8) ~
                element_value_pairs: c!(element_value_pairs, constant_pool),
-               || attributes::TypeAnnotation {
+               || attributes::annotations::TypeAnnotation {
                    target_info: target_info,
                    target_path: target_path,
                    type_index: type_index,
@@ -802,7 +802,7 @@ fn type_annotation<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
 }
 
 fn type_annotations<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
-                            -> ParseResult<'a, Vec<attributes::TypeAnnotation>> {
+                            -> ParseResult<'a, Vec<attributes::annotations::TypeAnnotation>> {
     p_wrap_nom!(
         input,
         chain!(num_annotations: p!(be_u16) ~

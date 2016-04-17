@@ -1,7 +1,7 @@
 #[allow(non_camel_case_types)]
 pub type u2 = super::u2;
 
-/// Module that contains values of access flags for a class or interface.
+/// Values of access flags for a class or interface.
 pub mod class_access_flags {
     #[allow(non_camel_case_types)]
     pub type access_flag = super::u2;
@@ -27,6 +27,7 @@ pub mod class_access_flags {
     pub const ACC_ENUM: t = 0x4000;
 }
 
+/// Values of access flags for an inner class.
 pub mod inner_class_access_flags {
     #[allow(non_camel_case_types)]
     pub type access_flag = super::u2;
@@ -55,7 +56,7 @@ pub mod inner_class_access_flags {
     pub const ACC_ENUM: t = 0x4000;
 }
 
-/// Module that contains values of access flags for a field.
+/// Values of access flags for a field.
 pub mod field_access_flags {
     #[allow(non_camel_case_types)]
     pub type access_flag = super::u2;
@@ -83,6 +84,7 @@ pub mod field_access_flags {
     pub const ACC_ENUM: t = 0x4000;
 }
 
+/// Values of access flags for a method.
 pub mod method_access_flags {
     #[allow(non_camel_case_types)]
     pub type access_flag = super::u2;
@@ -115,6 +117,7 @@ pub mod method_access_flags {
     pub const ACC_SYNTHETIC: t = 0x1000;
 }
 
+/// Values of access flags for parameters.
 pub mod parameter_access_flags {
     #[allow(non_camel_case_types)]
     pub type access_flag = super::u2;
