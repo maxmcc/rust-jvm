@@ -1,4 +1,4 @@
-pub mod annotations;
+pub mod annotation;
 
 use super::u1;
 use super::u2;
@@ -237,25 +237,25 @@ pub enum AttributeInfo {
         signature_index: constant_pool_index,
     },
     RuntimeVisibleAnnotations {
-        annotations: Vec<annotations::Annotation>,
+        annotations: Vec<annotation::Annotation>,
     },
     RuntimeInvisibleAnnotations {
-        annotations: Vec<annotations::Annotation>,
+        annotations: Vec<annotation::Annotation>,
     },
     RuntimeVisibleParameterAnnotations {
-        parameter_annotations: Vec<Vec<annotations::Annotation>>,
+        parameter_annotations: Vec<Vec<annotation::Annotation>>,
     },
     RuntimeInvisibleParameterAnnotations {
-        parameter_annotations: Vec<Vec<annotations::Annotation>>,
+        parameter_annotations: Vec<Vec<annotation::Annotation>>,
     },
     RuntimeVisibleTypeAnnotations {
-        annotations: Vec<annotations::TypeAnnotation>,
+        annotations: Vec<annotation::TypeAnnotation>,
     },
     RuntimeInvisibleTypeAnnotations {
-        annotations: Vec<annotations::TypeAnnotation>,
+        annotations: Vec<annotation::TypeAnnotation>,
     },
     AnnotationDefault {
-        default_value: annotations::ElementValue,
+        default_value: annotation::ElementValue,
     },
     MethodParameters {
         parameters: Vec<MethodParameter>,

@@ -2,13 +2,13 @@
 //! format](https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html).
 
 pub mod access_flags;
-pub mod attributes;
+pub mod attribute;
 pub mod constant_pool;
 
 pub use self::access_flags::class_access_flags;
 pub use self::access_flags::field_access_flags;
 pub use self::access_flags::method_access_flags;
-pub use self::attributes::AttributeInfo;
+pub use self::attribute::AttributeInfo;
 pub use self::constant_pool::ConstantPoolInfo;
 pub use self::constant_pool::ConstantPool;
 
