@@ -10,8 +10,13 @@ use model::class_file::constant_pool::ConstantPoolInfo;
 
 use util::modified_utf8;
 
+/// The input type to the parser.
 pub type Input<'a> = &'a [u8];
+
+/// The return type of a backtracking-controllable parser method.
 pub type ParseResult<'a, O> = Result<nom::IResult<Input<'a>, O, Error>, nom::Err<Input<'a>, Error>>;
+
+/// The type of an index into the class file constant pool.
 pub type ConstantPoolIndex = class_file::constant_pool_index;
 
 #[derive(Debug)]
@@ -1038,7 +1043,9 @@ fn method<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
 }
 
 
-/// Parses a Java class file `parser::class_file::parse_class_file`.
+/// Parses a Java class file.
+///
+/// `parser::class_file::parse_class_file(&[u8]) -> ParseResult<model::class_file::ClassFile>)`
 n!(pub parse_class_file<Input, ClassFile, Error>, p_cut!(
     Error::ClassFile,
     chain!(c!(magic) ~
