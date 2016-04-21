@@ -40,7 +40,6 @@ pub struct ExceptionTableEntry {
 pub mod stack_map_frame {
     use super::super::u1;
     use super::super::u2;
-    use super::super::constant_pool_index;
 
     pub use self::verification_type_info::VerificationTypeInfo;
 

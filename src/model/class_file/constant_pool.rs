@@ -115,7 +115,7 @@ pub mod reference_kind {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum MethodReference {
     GetField { reference_index: constant_pool_index },
     GetStatic { reference_index: constant_pool_index },
@@ -128,7 +128,7 @@ pub enum MethodReference {
     InvokeInterface { reference_index: constant_pool_index },
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ConstantPoolInfo {
     Class { name_index: constant_pool_index },
     FieldRef { class_index: constant_pool_index, name_and_type_index: constant_pool_index },
@@ -150,14 +150,20 @@ pub enum ConstantPoolInfo {
     MethodHandle { reference: MethodReference },
     MethodType { descriptor_index: constant_pool_index },
     InvokeDynamic {
-        /// A valid index into the `bootstrap_methods` array of the bootstrap
-        /// method table.
+        /// A valid index into the `bootstrap_methods` array of the bootstrap method table.
         bootstrap_method_attr_index: constant_pool_index,
-        /// A valid index into the `constant_pool` table. The `constant_pool`
-        /// entry at that index must be a valid `ConstantPoolInfo::Utf8` structure
-        /// representing the name of the attribute.
+        /// A valid index into the `constant_pool` table. The `constant_pool` entry at that index
+        /// must be a valid `ConstantPoolInfo::Utf8` structure representing the name of the
+        /// attribute.
         name_and_type_index: constant_pool_index,
     },
+    /// Indicates an unusable constant pool entry.
+    ///
+    /// All 8-byte constants take up two entries in the constant_pool table of the class file. If a
+    /// `CONSTANT_Long_info` or `CONSTANT_Double_info` structure is the item in the `constant_pool`
+    /// table at index _n_, then the next usable item in the pool is located at index _n_ + 2. The
+    /// constant_pool index _n_ + 1 must be valid but is considered unusable.
+    Unusable,
 }
 
 impl ConstantPoolInfo {
@@ -177,6 +183,8 @@ impl ConstantPoolInfo {
             ConstantPoolInfo::MethodHandle { .. } => Tag::MethodHandle,
             ConstantPoolInfo::MethodType { .. } => Tag::MethodType,
             ConstantPoolInfo::InvokeDynamic { .. } => Tag::InvokeDynamic,
+            ConstantPoolInfo::Unusable =>
+                panic!("unusable constant pool entry does not have a valid tag"),
         }
     }
 }
@@ -196,8 +204,7 @@ pub struct OneIndexedVec<T> {
 
 /// Like a `Vec`, but 1-indexed instead of 0-indexed.
 impl<T> OneIndexedVec<T> {
-    /// Returns the element of a slice at the given index, or None if the index
-    /// is out of bounds.
+    /// Returns the element of a slice at the given index, or None if the index is out of bounds.
     pub fn get(&self, index: usize) -> Option<&T> {
         if index == 0 {
             panic!("index is 0");
