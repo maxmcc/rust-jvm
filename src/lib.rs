@@ -10,7 +10,7 @@ extern crate nom;
 
 pub mod model;
 pub mod parser;
-pub mod interp;
+pub mod vm;
 pub mod util;
 
 mod logging;
