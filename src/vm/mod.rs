@@ -24,6 +24,8 @@ pub enum Value {
     Double(i64),
     /// A reference to a Java object in the heap.
     Reference(Rc<RefCell<Object>>),
+    /// A reference to a Java object which is `null`.
+    NullReference,
 }
 
 #[derive(Debug)]
