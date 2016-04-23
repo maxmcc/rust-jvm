@@ -1,6 +1,6 @@
 use std::error;
 use std::fmt;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 use parser::class_file;
@@ -116,11 +116,16 @@ impl ClassLoader {
                     }.and_then(|_| {
                         self.load_class_impl(String::from("java/lang/Object"), pendingNames)
                             .map(|object_class| {
+                                let instance_fields = HashSet::new();
+                                instance_fields.insert(String::from("length"));
                                 let class = Rc::new(vm::Class {
                                     name: symref::Class { name: binaryName.clone() },
                                     superclass: Some(object_class),
-                                    methods: HashMap::new(),
                                     constant_pool: Vec::new(),
+                                    class_methods: HashMap::new(),
+                                    class_fields: HashMap::new(),
+                                    instance_methods: HashMap::new(),
+                                    instance_fields: instance_fields,
                                 });
                                 self.classes.insert(binaryName, class);
                                 class

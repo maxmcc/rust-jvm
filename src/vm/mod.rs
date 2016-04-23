@@ -9,7 +9,7 @@ pub use vm::heap::Object;
 
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// A value in the Java virtual machine.
 #[derive(Debug, Clone)]
@@ -31,8 +31,11 @@ pub enum Value {
 pub struct Class {
     name: symref::Class,
     superclass: Option<Rc<Class>>,
-    methods: HashMap<String, Method>,
     constant_pool: RuntimeConstantPool,
+    class_methods: HashMap<String, Method>,
+    class_fields: HashMap<String, Value>,
+    instance_methods: HashMap<String, Method>,
+    instance_fields: HashSet<String>, // TODO need some type information here
 }
 
 #[derive(Debug)]
