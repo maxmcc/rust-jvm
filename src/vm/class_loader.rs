@@ -5,6 +5,7 @@ use std::rc::Rc;
 
 use parser::class_file;
 use vm;
+use vm::handle;
 use vm::symref;
 
 #[derive(Debug)]
@@ -67,72 +68,76 @@ impl error::Error for Error {
 
 #[derive(Debug)]
 pub struct ClassLoader {
-    classes: HashMap<String, Rc<vm::Class>>,
+    classes: HashMap<handle::Class, Rc<vm::Class>>,
 }
 
 impl ClassLoader {
-    /// Attempts to create, load, and prepare the class with the specified binary name using the
-    /// bootstrap class loader implementation. The bootstrap class loader searches the current
-    /// directory for a class file with the correct fully-qualified name. If none is found, the
-    /// bootstrap class loader then attempts to load the class from the standard library JAR.
+    /// Attempts to create, load, and prepare the specified using the bootstrap class loader
+    /// implementation. The bootstrap class loader searches the current directory for a class file
+    /// with the correct fully-qualified name. If none is found, the bootstrap class loader then
+    /// attempts to load the class from the standard library JAR.
     ///
     /// This implementation lazily resolves symbolic references, so no resolution of references
     /// within the loaded class is performed by this function.
     ///
     /// This implementation does not attempt to perform bytecode verification; we assume that any
     /// class files we attempt to load are valid.
-    pub fn load_class(&mut self, binaryName: String) -> Result<Rc<vm::Class>, Error> {
-        self.load_class_impl(binaryName, &mut vec![])
+    pub fn load_class(&mut self, handle: handle::Class) -> Result<Rc<vm::Class>, Error> {
+        self.load_class_impl(handle, &mut HashSet::new())
     }
 
     /// Implements `load_class`. There is an additional parameter containing names that are
     /// currently being resolved recursively, to ensure that we can detect the ClassCirularity
     /// error condition without overflowing the Rust stack.
-    fn load_class_impl(&mut self, binaryName: String, pendingNames: &mut Vec<String>)
+    fn load_class_impl(&mut self, handle: handle::Class, pending: &mut HashSet<handle::Class>)
         -> Result<Rc<vm::Class>, Error> {
-        let firstIndex = pendingNames.into_iter().position(|name| *name == binaryName);
-        if let Some(_) = firstIndex {
+        if pending.contains(&handle) {
             // we're already resolving this name
             Err(Error::ClassCircularity)
-        } else if let Some(class) = self.classes.get(&binaryName) {
+        } else if let Some(class) = self.classes.get(&handle) {
             // the class is already resolved
             Ok(class.clone())
         } else {
-            pendingNames.push(binaryName);
+            pending.insert(handle);
             let res =
-                // first, determine if the class is an array class
-                if binaryName.chars().next().map(|c| c == '[').unwrap_or(false) {
-                    let (_, componentDescriptor) = binaryName.split_at(1);
-                    match componentDescriptor {
-                        "B" | "C" | "D" | "F" | "I" | "J" | "S" | "Z" => {
-                            // the components of this array are primitive; no component to resolve
-                            Ok(None)
-                        },
-                        componentName => {
-                            // recursively resolve the component
-                            self.load_class_impl(String::from(componentName), pendingNames)
-                                .map(|class| Some(class))
-                        },
-                    }.and_then(|_| {
-                        self.load_class_impl(String::from("java/lang/Object"), pendingNames)
-                            .map(|object_class| {
+                match handle {
+                    handle::Class::Array(component_type) => {
+                        match *component_type {
+                            handle::Type::Byte | handle::Type::Char | handle::Type::Double
+                                | handle::Type::Float | handle::Type::Int | handle::Type::Long
+                                | handle::Type::Short | handle::Type::Boolean => Ok(None),
+                            handle::Type::Reference(component_handle) =>
+                                self.load_class_impl(component_handle, pending)
+                                    .map(|class| Some(class))
+                        }.and_then(|_| {
+                            let object_name = vec![];
+                            object_name.push(String::from("java"));
+                            object_name.push(String::from("lang"));
+                            object_name.push(String::from("Object"));
+                            let object_handle = handle::Class::Scalar(object_name);
+                            self.load_class_impl(object_handle, pending).map(|object_class| {
+                                let length_field = handle::Field {
+                                    name: String::from("length"),
+                                    ty: handle::Type::Int,
+                                };
                                 let instance_fields = HashSet::new();
-                                instance_fields.insert(String::from("length"));
+                                instance_fields.insert(length_field);
                                 let class = Rc::new(vm::Class {
-                                    name: symref::Class { name: binaryName.clone() },
+                                    symref: symref::Class { handle: handle.clone() },
                                     superclass: Some(object_class),
                                     constant_pool: Vec::new(),
-                                    class_methods: HashMap::new(),
+                                    methods: HashMap::new(),
                                     class_fields: HashMap::new(),
-                                    instance_methods: HashMap::new(),
                                     instance_fields: instance_fields,
                                 });
-                                self.classes.insert(binaryName, class);
+                                self.classes.insert(handle, class);
                                 class
                             })
-                    })
+                        })
+                    },
                 };
-            pendingNames.pop().unwrap();
+            pending.remove(&handle);
+            res
         }
     }
 }
