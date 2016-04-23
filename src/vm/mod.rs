@@ -22,9 +22,11 @@ pub enum Value {
     /// A 64-bit signed integral type, representing the Java type `long`.
     Long(i64),
     /// A 64-bit floating-point type, representing the Java type `double`.
-    Double(i64),
+    Double(f64),
     /// A reference to a Java object in the heap.
     Reference(Rc<RefCell<Object>>),
+    /// A reference to a Java object which is `null`.
+    NullReference,
 }
 
 #[derive(Debug)]
