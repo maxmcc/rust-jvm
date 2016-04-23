@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub enum Instruction {
     Constant(op::Constant),
     Load(op::Load),
@@ -12,6 +13,7 @@ pub enum Instruction {
 }
 
 mod op {
+    #[derive(Debug)]
     #[allow(non_camel_case_types)]
     pub enum Constant {
         Nop,
@@ -37,6 +39,7 @@ mod op {
         Ldc2_w,
     }
 
+    #[derive(Debug)]
     #[allow(non_camel_case_types)]
     pub enum Load {
         Iload,
@@ -74,6 +77,7 @@ mod op {
         Saload,
     }
 
+    #[derive(Debug)]
     #[allow(non_camel_case_types)]
     pub enum Store {
         Istore,
@@ -111,6 +115,7 @@ mod op {
         Sastore,
     }
 
+    #[derive(Debug)]
     #[allow(non_camel_case_types)]
     pub enum Stack {
         Pop,
@@ -124,6 +129,7 @@ mod op {
         Swap,
     }
 
+    #[derive(Debug)]
     #[allow(non_camel_case_types)]
     pub enum Math {
         Iadd,
@@ -165,6 +171,7 @@ mod op {
         Iinc,
     }
 
+    #[derive(Debug)]
     pub enum Conversion {
         I2l,
         I2f,
@@ -183,6 +190,7 @@ mod op {
         I2s,
     }
 
+    #[derive(Debug)]
     #[allow(non_camel_case_types)]
     pub enum Comparison {
         Lcmp,
@@ -206,6 +214,7 @@ mod op {
         If_acmpne,
     }
 
+    #[derive(Debug)]
     pub enum Control {
         Goto,
         Jsr,
@@ -220,6 +229,7 @@ mod op {
         Return,
     }
 
+    #[derive(Debug)]
     pub enum Reference {
         Getstatic,
         Putstatic,
@@ -241,6 +251,7 @@ mod op {
         Monitorexit,
     }
 
+    #[derive(Debug)]
     #[allow(non_camel_case_types)]
     pub enum Extended {
         Wide,
