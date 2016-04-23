@@ -13,6 +13,7 @@ pub enum Error {
     /// If no "purported representation" of the class is found. §5.3.1.
     ClassNotFound,
     /// The "purported representation" does not follow the class file format. §5.3.5.
+    // TODO: class_file::Error doesn't implement error::Error
     ClassFormat(class_file::Error),
     /// The "purported representation" is not of a supported version. §5.3.5.
     UnsupportedVersion { major: u16, minor: u16 },
@@ -28,7 +29,7 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Error::ClassNotFound => write!(f, "ClassNotFound"),
-            Error::ClassFormat(ref err) => write!(f, "ClassFormat: {}", err),
+            Error::ClassFormat(ref err) => write!(f, "ClassFormat: {:#?}", err),
             Error::UnsupportedVersion { major, minor } =>
                 write!(f, "UnsupportedVersion {}.{}", major, minor),
             Error::NoClassDefFound => write!(f, "NoClassDefFound"),
@@ -43,7 +44,7 @@ impl error::Error for Error {
     fn description(&self) -> &str {
         match *self {
             Error::ClassNotFound => "class representation not found",
-            Error::ClassFormat(ref err) => format!("invalid class file: {}", err.description()),
+            Error::ClassFormat(ref err) => &format!("invalid class file: {:#?}", err),
             Error::UnsupportedVersion { major, minor } =>
                 &format!("unsupported version: {}.{}", major, minor),
             Error::NoClassDefFound => "class representation is not of the requested class",
@@ -55,14 +56,7 @@ impl error::Error for Error {
     }
 
     fn cause(&self) -> Option<&error::Error> {
-        match *self {
-            Error::ClassNotFound => None,
-            Error::ClassFormat(ref err) => Some(err),
-            Error::UnsupportedVersion { .. } => None,
-            Error::NoClassDefFound => None,
-            Error::IncompatibleClassChange(_) => None,
-            Error::ClassCircularity => None,
-        }
+        None
     }
 }
 
