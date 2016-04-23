@@ -2,6 +2,7 @@ pub mod bytecode;
 pub mod constant_pool;
 pub mod stack;
 pub mod heap;
+pub mod handle;
 mod class_loader;
 
 pub use vm::constant_pool::{symref, RuntimeConstantPool};
@@ -34,15 +35,14 @@ pub struct Class {
     name: symref::Class,
     superclass: Option<Rc<Class>>,
     constant_pool: RuntimeConstantPool,
-    class_methods: HashMap<String, Method>,
-    class_fields: HashMap<String, Value>,
-    instance_methods: HashMap<String, Method>,
-    instance_fields: HashSet<String>, // TODO need some type information here
+    methods: HashMap<handle::Method, Method>,
+    class_fields: HashMap<handle::Field, Value>,
+    instance_fields: HashSet<handle::Field>,
 }
 
 #[derive(Debug)]
 pub struct Method {
-    name: symref::Method,
+    symref: symref::Method,
     code: Vec<bytecode::Instruction>,
 }
 
