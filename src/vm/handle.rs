@@ -26,6 +26,6 @@ pub struct Method {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Field {
-    name: String,
-    ty: Type,
+    pub name: String,
+    pub ty: Type,
 }

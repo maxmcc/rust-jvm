@@ -6,19 +6,19 @@ pub mod symref {
 
     #[derive(Debug, PartialEq, Eq, Hash)]
     pub struct Class {
-        handle: handle::Class,
+        pub handle: handle::Class,
     }
 
     #[derive(Debug, PartialEq, Eq, Hash)]
     pub struct Method {
-        class: Class,
-        handle: handle::Method,
+        pub class: Class,
+        pub handle: handle::Method,
     }
 
     #[derive(Debug, PartialEq, Eq, Hash)]
     pub struct Field {
-        class: Class,
-        handle: handle::Field,
+        pub class: Class,
+        pub handle: handle::Field,
     }
 }
 
