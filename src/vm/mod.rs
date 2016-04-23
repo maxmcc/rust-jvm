@@ -32,7 +32,7 @@ pub enum Value {
 
 #[derive(Debug)]
 pub struct Class {
-    name: symref::Class,
+    symref: symref::Class,
     superclass: Option<Rc<Class>>,
     constant_pool: RuntimeConstantPool,
     methods: HashMap<handle::Method, Method>,

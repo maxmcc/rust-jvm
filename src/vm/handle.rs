@@ -9,12 +9,12 @@ pub enum Type {
     Short,
     Boolean,
     Reference(Class),
-    Array(Box<Type>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Class {
-    name: Vec<String>,
+pub enum Class {
+    Scalar(Vec<String>),
+    Array(Box<Type>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
