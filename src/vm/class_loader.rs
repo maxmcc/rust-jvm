@@ -63,9 +63,17 @@ impl error::Error for Error {
 #[derive(Debug)]
 pub struct ClassLoader {
     classes: HashMap<handle::Class, Rc<vm::Class>>,
+    pending: HashSet<handle::Class>,
 }
 
 impl ClassLoader {
+    fn new() -> ClassLoader {
+        ClassLoader {
+            classes: HashMap::new(),
+            pending: HashSet::new(),
+        }
+    }
+
     /// Attempts to create, load, and prepare the specified using the bootstrap class loader
     /// implementation. The bootstrap class loader searches the current directory for a class file
     /// with the correct fully-qualified name. If none is found, the bootstrap class loader then
@@ -77,61 +85,57 @@ impl ClassLoader {
     /// This implementation does not attempt to perform bytecode verification; we assume that any
     /// class files we attempt to load are valid.
     pub fn load_class(&mut self, handle: handle::Class) -> Result<Rc<vm::Class>, Error> {
-        self.load_class_impl(handle, &mut HashSet::new())
-    }
-
-    /// Implements `load_class`. There is an additional parameter containing names that are
-    /// currently being resolved recursively, to ensure that we can detect the ClassCirularity
-    /// error condition without overflowing the Rust stack.
-    fn load_class_impl(&mut self, handle: handle::Class, pending: &mut HashSet<handle::Class>)
-        -> Result<Rc<vm::Class>, Error> {
-        if pending.contains(&handle) {
+        if self.pending.contains(&handle) {
             // we're already resolving this name
             Err(Error::ClassCircularity)
         } else if let Some(class) = self.classes.get(&handle) {
             // the class is already resolved
             Ok(class.clone())
         } else {
-            pending.insert(handle);
-            let res =
-                match handle {
-                    handle::Class::Array(component_type) => {
-                        match *component_type {
-                            handle::Type::Byte | handle::Type::Char | handle::Type::Double
-                                | handle::Type::Float | handle::Type::Int | handle::Type::Long
-                                | handle::Type::Short | handle::Type::Boolean => Ok(None),
-                            handle::Type::Reference(component_handle) =>
-                                self.load_class_impl(component_handle, pending)
-                                    .map(|class| Some(class))
-                        }.and_then(|_| {
-                            let object_name = vec![];
-                            object_name.push(String::from("java"));
-                            object_name.push(String::from("lang"));
-                            object_name.push(String::from("Object"));
-                            let object_handle = handle::Class::Scalar(object_name);
-                            self.load_class_impl(object_handle, pending).map(|object_class| {
-                                let length_field = handle::Field {
-                                    name: String::from("length"),
-                                    ty: handle::Type::Int,
-                                };
-                                let instance_fields = HashSet::new();
-                                instance_fields.insert(length_field);
-                                let class = Rc::new(vm::Class {
-                                    symref: symref::Class { handle: handle.clone() },
-                                    superclass: Some(object_class),
-                                    constant_pool: Vec::new(),
-                                    methods: HashMap::new(),
-                                    class_fields: HashMap::new(),
-                                    instance_fields: instance_fields,
-                                });
-                                self.classes.insert(handle, class);
-                                class
-                            })
-                        })
-                    },
-                };
-            pending.remove(&handle);
+            self.pending.insert(handle);
+            let res = match handle {
+                handle::Class::Array(component_type) => {
+                    self.create_array_class(*component_type).map(|class| {
+                        let rc = Rc::new(class);
+                        self.classes.insert(handle, rc);
+                        rc
+                    })
+                },
+            };
+            self.pending.remove(&handle);
             res
         }
+    }
+
+    fn create_array_class(&mut self, component_type: handle::Type) -> Result<vm::Class, Error> {
+        match component_type {
+            handle::Type::Byte | handle::Type::Char | handle::Type::Double
+                | handle::Type::Float | handle::Type::Int | handle::Type::Long
+                | handle::Type::Short | handle::Type::Boolean => Ok(None),
+            handle::Type::Reference(component_handle) =>
+                self.load_class(component_handle).map(|class| Some(class))
+        }.and_then(|_| {
+            let object_name = vec![];
+            object_name.push(String::from("java"));
+            object_name.push(String::from("lang"));
+            object_name.push(String::from("Object"));
+            let object_handle = handle::Class::Scalar(object_name);
+            self.load_class(object_handle).map(|object_class| {
+                let length_field = handle::Field {
+                    name: String::from("length"),
+                    ty: handle::Type::Int,
+                };
+                let instance_fields = HashSet::new();
+                instance_fields.insert(length_field);
+                vm::Class {
+                    symref: symref::Class { handle: handle::Class::Array(Box::new(component_type)) },
+                    superclass: Some(object_class),
+                    constant_pool: Vec::new(),
+                    methods: HashMap::new(),
+                    class_fields: HashMap::new(),
+                    instance_fields: instance_fields,
+                }
+            })
+        })
     }
 }
