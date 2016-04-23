@@ -2,6 +2,7 @@ pub mod bytecode;
 pub mod constant_pool;
 pub mod stack;
 pub mod heap;
+mod class_loader;
 
 pub use vm::constant_pool::{symref, RuntimeConstantPool};
 pub use vm::heap::Object;
