@@ -82,46 +82,52 @@ impl ClassLoader {
     /// This implementation does not attempt to perform bytecode verification; we assume that any
     /// class files we attempt to load are valid.
     pub fn load_class(&mut self, binaryName: String) -> Result<Rc<vm::Class>, Error> {
-        self.load_class_impl(&mut vec![binaryName])
+        self.load_class_impl(binaryName, &mut vec![])
     }
 
-    /// Implements `load_class`. The name parameter is replaced with a vector of names that are
-    /// currently being resolved recursively, to ensure that we can detect the ClassCircularity
+    /// Implements `load_class`. There is an additional parameter containing names that are
+    /// currently being resolved recursively, to ensure that we can detect the ClassCirularity
     /// error condition without overflowing the Rust stack.
-    fn load_class_impl(&mut self, pendingNames: &mut Vec<String>) -> Result<Rc<vm::Class>, Error> {
-        let binaryName = pendingNames.last().unwrap();
-        let firstIndex = pendingNames.into_iter().position(|name| name == binaryName).unwrap();
-        if firstIndex < pendingNames.len() - 1 {
-            // if we're already resolving this name
+    fn load_class_impl(&mut self, binaryName: String, pendingNames: &mut Vec<String>)
+        -> Result<Rc<vm::Class>, Error> {
+        let firstIndex = pendingNames.into_iter().position(|name| *name == binaryName);
+        if let Some(_) = firstIndex {
+            // we're already resolving this name
             Err(Error::ClassCircularity)
-        } else if let Some(class) = self.classes.get(binaryName) {
-            // if the class is already resolved
+        } else if let Some(class) = self.classes.get(&binaryName) {
+            // the class is already resolved
             Ok(class.clone())
         } else {
-            // first, determine if the class is an array class
-            if binaryName.chars().next().map(|c| c == '[').unwrap_or(false) {
-                let (_, componentDescriptor) = binaryName.split_at(1);
-                match componentDescriptor {
-                    "B" | "C" | "D" | "F" | "I" | "J" | "S" | "Z" => {
-                        // the components of this array are primitive
-                        pendingNames.push(String::from("java/lang/Object"));
-                        self.load_class_impl(pendingNames).map(|object_class| {
-                            let class = Rc::new(vm::Class {
-                                name: symref::Class { name: binaryName.clone() },
-                                superclass: Some(object_class),
-                                methods: HashMap::new(),
-                                constant_pool: Vec::new(),
-                            });
-                            self.classes.insert(*binaryName, class);
-                            class
-                        })
-                    },
-                    componentName => {
-                        // recursively resolve the component
-                        pendingNames.push(String::from(componentName));
-                    },
-                }
-            }
+            pendingNames.push(binaryName);
+            let res =
+                // first, determine if the class is an array class
+                if binaryName.chars().next().map(|c| c == '[').unwrap_or(false) {
+                    let (_, componentDescriptor) = binaryName.split_at(1);
+                    match componentDescriptor {
+                        "B" | "C" | "D" | "F" | "I" | "J" | "S" | "Z" => {
+                            // the components of this array are primitive; no component to resolve
+                            Ok(None)
+                        },
+                        componentName => {
+                            // recursively resolve the component
+                            self.load_class_impl(String::from(componentName), pendingNames)
+                                .map(|class| Some(class))
+                        },
+                    }.and_then(|_| {
+                        self.load_class_impl(String::from("java/lang/Object"), pendingNames)
+                            .map(|object_class| {
+                                let class = Rc::new(vm::Class {
+                                    name: symref::Class { name: binaryName.clone() },
+                                    superclass: Some(object_class),
+                                    methods: HashMap::new(),
+                                    constant_pool: Vec::new(),
+                                });
+                                self.classes.insert(binaryName, class);
+                                class
+                            })
+                    })
+                };
+            pendingNames.pop().unwrap();
         }
     }
 }
