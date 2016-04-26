@@ -95,47 +95,29 @@ impl ClassLoader {
             self.pending.insert(handle);
             let res = match handle {
                 handle::Class::Array(component_type) => {
-                    self.create_array_class(*component_type).map(|class| {
-                        let rc = Rc::new(class);
-                        self.classes.insert(handle, rc);
-                        rc
+                    match *component_type {
+                        handle::Type::Byte | handle::Type::Char | handle::Type::Double
+                            | handle::Type::Float | handle::Type::Int | handle::Type::Long
+                            | handle::Type::Short | handle::Type::Boolean => Ok(None),
+                        handle::Type::Reference(component_handle) =>
+                            self.load_class(component_handle).map(|class| Some(class))
+                    }.and_then(|_| {
+                        let object_name = vec![];
+                        object_name.push(String::from("java"));
+                        object_name.push(String::from("lang"));
+                        object_name.push(String::from("Object"));
+                        let object_handle = handle::Class::Scalar(object_name);
+                        self.load_class(object_handle).map(|object_class| {
+                            let class = vm::Class::new_array(object_class, *component_type);
+                            let rc = Rc::new(class);
+                            self.classes.insert(handle, rc);
+                            rc
+                        })
                     })
                 },
             };
             self.pending.remove(&handle);
             res
         }
-    }
-
-    fn create_array_class(&mut self, component_type: handle::Type) -> Result<vm::Class, Error> {
-        match component_type {
-            handle::Type::Byte | handle::Type::Char | handle::Type::Double
-                | handle::Type::Float | handle::Type::Int | handle::Type::Long
-                | handle::Type::Short | handle::Type::Boolean => Ok(None),
-            handle::Type::Reference(component_handle) =>
-                self.load_class(component_handle).map(|class| Some(class))
-        }.and_then(|_| {
-            let object_name = vec![];
-            object_name.push(String::from("java"));
-            object_name.push(String::from("lang"));
-            object_name.push(String::from("Object"));
-            let object_handle = handle::Class::Scalar(object_name);
-            self.load_class(object_handle).map(|object_class| {
-                let length_field = handle::Field {
-                    name: String::from("length"),
-                    ty: handle::Type::Int,
-                };
-                let instance_fields = HashSet::new();
-                instance_fields.insert(length_field);
-                vm::Class {
-                    symref: symref::Class { handle: handle::Class::Array(Box::new(component_type)) },
-                    superclass: Some(object_class),
-                    constant_pool: Vec::new(),
-                    methods: HashMap::new(),
-                    class_fields: HashMap::new(),
-                    instance_fields: instance_fields,
-                }
-            })
-        })
     }
 }

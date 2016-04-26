@@ -40,6 +40,25 @@ pub struct Class {
     instance_fields: HashSet<handle::Field>,
 }
 
+impl Class {
+    pub fn new_array(object_class: Rc<Class>, component_type: handle::Type) -> Class {
+        let length_field = handle::Field {
+            name: String::from("length"),
+            ty: handle::Type::Int,
+        };
+        let instance_fields = HashSet::new();
+        instance_fields.insert(length_field);
+        Class {
+            symref: symref::Class { handle: handle::Class::Array(Box::new(component_type)) },
+            superclass: Some(object_class.clone()),
+            constant_pool: Vec::new(),
+            methods: HashMap::new(),
+            class_fields: HashMap::new(),
+            instance_fields: instance_fields,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Method {
     symref: symref::Method,
