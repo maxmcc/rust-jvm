@@ -1,7 +1,12 @@
 use std::error;
 use std::fmt;
+use std::fs::File;
+use std::io;
+use std::io::Read;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
+
+use nom;
 
 use parser::class_file;
 use vm;
@@ -11,10 +16,9 @@ use vm::symref;
 #[derive(Debug)]
 pub enum Error {
     /// If no "purported representation" of the class is found. §5.3.1.
-    ClassNotFound,
+    ClassNotFound(io::Error),
     /// The "purported representation" does not follow the class file format. §5.3.5.
-    // TODO: class_file::Error doesn't implement error::Error
-    ClassFormat(class_file::Error),
+    ClassFormat,
     /// The "purported representation" is not of a supported version. §5.3.5.
     UnsupportedVersion { major: u16, minor: u16 },
     /// The "purported representation" does not actually represent the requested class. §5.3.5.
@@ -28,8 +32,8 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Error::ClassNotFound => write!(f, "ClassNotFound"),
-            Error::ClassFormat(ref err) => write!(f, "ClassFormat: {:#?}", err),
+            Error::ClassNotFound(ref err) => write!(f, "ClassNotFound: {}", err),
+            Error::ClassFormat => write!(f, "ClassFormat"),
             Error::UnsupportedVersion { major, minor } =>
                 write!(f, "UnsupportedVersion {}.{}", major, minor),
             Error::NoClassDefFound => write!(f, "NoClassDefFound"),
@@ -43,8 +47,9 @@ impl fmt::Display for Error {
 impl error::Error for Error {
     fn description(&self) -> &str {
         match *self {
-            Error::ClassNotFound => "class representation not found",
-            Error::ClassFormat(ref err) => &format!("invalid class file: {:#?}", err),
+            Error::ClassNotFound(ref err) =>
+                &format!("class representation not found due to I/O error: {}", err.description()),
+            Error::ClassFormat => "invalid class format",
             Error::UnsupportedVersion { major, minor } =>
                 &format!("unsupported version: {}.{}", major, minor),
             Error::NoClassDefFound => "class representation is not of the requested class",
@@ -56,7 +61,10 @@ impl error::Error for Error {
     }
 
     fn cause(&self) -> Option<&error::Error> {
-        None
+        match *self {
+            Error::ClassNotFound(ref err) => Some(err),
+            _ => None,
+        }
     }
 }
 
@@ -94,7 +102,16 @@ impl ClassLoader {
         } else {
             self.pending.insert(handle);
             let res = match handle {
+                handle::Class::Scalar(name) => {
+                    let class_bytes = try!(self.find_class_bytes(name)
+                                               .map_err(|err| Error::ClassNotFound(err)));
+                    // TODO we discard the parse error, but it's so hard to fix that...
+                    let parsed_class = try!(class_file::parse_class_file(&class_bytes)
+                                                .map_err(|err| Error::ClassFormat));
+                },
                 handle::Class::Array(component_type) => {
+                    // load the component type class, even though we don't use it, to ensure that
+                    // any errors resulting from the load happen at the right time
                     match *component_type {
                         handle::Type::Byte | handle::Type::Char | handle::Type::Double
                             | handle::Type::Float | handle::Type::Int | handle::Type::Long
@@ -102,10 +119,7 @@ impl ClassLoader {
                         handle::Type::Reference(component_handle) =>
                             self.load_class(component_handle).map(|class| Some(class))
                     }.and_then(|_| {
-                        let object_name = vec![];
-                        object_name.push(String::from("java"));
-                        object_name.push(String::from("lang"));
-                        object_name.push(String::from("Object"));
+                        let object_name = String::from("java/lang/Object");
                         let object_handle = handle::Class::Scalar(object_name);
                         self.load_class(object_handle).map(|object_class| {
                             let class = vm::Class::new_array(object_class, *component_type);
@@ -119,5 +133,14 @@ impl ClassLoader {
             self.pending.remove(&handle);
             res
         }
+    }
+
+    fn find_class_bytes(&mut self, name: String) -> Result<Vec<u8>, io::Error> {
+        // isn't this so convenient!
+        let file_name = name + ".class";
+        File::open(file_name).and_then(|file| {
+            let res = vec![];
+            file.read_to_end(&mut res).map(|_| res)
+        })
     }
 }

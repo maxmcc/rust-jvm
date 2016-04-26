@@ -41,6 +41,20 @@ pub struct Class {
 }
 
 impl Class {
+    pub fn new(symref: symref::Class, superclass: Option<Rc<Class>>,
+               constant_pool: RuntimeConstantPool, methods: HashMap<handle::Method, Method>,
+               class_fields: HashMap<handle::Field, Value>, instance_fields: HashSet<handle::Field>)
+            -> Class {
+        Class {
+            symref: symref,
+            superclass: superclass,
+            constant_pool: constant_pool,
+            methods: methods,
+            class_fields: class_fields,
+            instance_fields: instance_fields,
+        }
+    }
+
     pub fn new_array(object_class: Rc<Class>, component_type: handle::Type) -> Class {
         let length_field = handle::Field {
             name: String::from("length"),

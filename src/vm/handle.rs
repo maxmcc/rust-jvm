@@ -13,7 +13,7 @@ pub enum Type {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Class {
-    Scalar(Vec<String>),
+    Scalar(String),
     Array(Box<Type>),
 }
 
