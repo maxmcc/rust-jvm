@@ -1,5 +1,4 @@
-use std::ops::Index;
-use std::ops::IndexMut;
+use util::one_indexed_vec::OneIndexedVec;
 
 use super::u1;
 use super::u2;
@@ -193,66 +192,6 @@ pub type ConstantPool = OneIndexedVec<ConstantPoolInfo>;
 
 impl ConstantPool {
     pub fn from_zero_indexed_vec(vec: Vec<ConstantPoolInfo>) -> Self {
-        OneIndexedVec { vec: vec }
-    }
-}
-
-#[derive(Debug)]
-pub struct OneIndexedVec<T> {
-    vec: Vec<T>,
-}
-
-/// Like a `Vec`, but 1-indexed instead of 0-indexed.
-impl<T> OneIndexedVec<T> {
-    /// Returns the element of a slice at the given index, or None if the index is out of bounds.
-    pub fn get(&self, index: usize) -> Option<&T> {
-        if index == 0 {
-            panic!("index is 0");
-        }
-        self.vec.get(index - 1)
-    }
-
-    /// Returns the number of elements in the slice.
-    pub fn len(&self) -> usize {
-        self.vec.len()
-    }
-
-    /// Returns true if the slice has a length of 0.
-    pub fn is_empty(&self) -> bool {
-        self.vec.is_empty()
-    }
-
-    /// Returns an iterator over the slice.
-    pub fn iter(&self) -> ::std::slice::Iter<T> {
-        self.vec.iter()
-    }
-
-    pub fn iter_mut(&mut self) -> ::std::slice::IterMut<T> {
-        self.vec.iter_mut()
-    }
-}
-
-impl<T> Index<usize> for OneIndexedVec<T> {
-    type Output = T;
-    fn index(&self, index: usize) -> &Self::Output {
-        if index == 0 {
-            panic!("index is 0");
-        }
-        &self.vec[index - 1]
-    }
-}
-
-impl<T> IndexMut<usize> for OneIndexedVec<T> {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        if index == 0 {
-            panic!("index is 0");
-        }
-        &mut self.vec[index - 1]
-    }
-}
-
-impl<T> From<Vec<T>> for OneIndexedVec<T> {
-    fn from(vec: Vec<T>) -> Self {
-        OneIndexedVec { vec: vec }
+        OneIndexedVec::from(vec)
     }
 }
