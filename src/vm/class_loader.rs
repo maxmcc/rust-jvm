@@ -13,7 +13,6 @@ use parser::class_file;
 use vm;
 use vm::constant_pool::{RuntimeConstantPool, RuntimeConstantPoolEntry};
 use vm::handle;
-use vm::symref;
 
 #[derive(Debug)]
 pub enum Error {
@@ -94,44 +93,45 @@ impl ClassLoader {
     pub fn load_class(&mut self, handle: &handle::Class) -> Result<Rc<vm::Class>, Error> {
         if self.pending.contains(&handle) {
             // we're already resolving this name
-            Err(Error::ClassCircularity)
+            return Err(Error::ClassCircularity)
         } else if let Some(class) = self.classes.get(&handle) {
             // the class is already resolved
-            Ok(class.clone())
-        } else {
-            self.pending.insert(handle.clone());
-            let res = match *handle {
-                handle::Class::Scalar(ref name) => {
-                    let class_bytes = try!(self.find_class_bytes(name)
-                                               .map_err(|err| Error::ClassNotFound(err)));
-                    let (class_file, rcp) = try!(self.derive_class(&handle, &class_bytes));
-                    panic!("not yet implemented")
-                },
-
-                handle::Class::Array(ref component_type) => {
-                    // load the component type class, even though we don't use it, to ensure that
-                    // any errors resulting from the load happen at the right time
-                    match **component_type {
-                        handle::Type::Byte | handle::Type::Char | handle::Type::Double
-                            | handle::Type::Float | handle::Type::Int | handle::Type::Long
-                            | handle::Type::Short | handle::Type::Boolean => Ok(None),
-                        handle::Type::Reference(ref component_handle) =>
-                            self.load_class(component_handle).map(|class| Some(class))
-                    }.and_then(|_| {
-                        let object_name = String::from("java/lang/Object");
-                        let object_handle = handle::Class::Scalar(object_name);
-                        self.load_class(&object_handle).map(|object_class| {
-                            let class = vm::Class::new_array(object_class, **component_type);
-                            let rc = Rc::new(class);
-                            self.classes.insert(handle.clone(), rc.clone());
-                            rc
-                        })
-                    })
-                },
-            };
-            self.pending.remove(&handle);
-            res
+            return Ok(class.clone())
         }
+
+        // this can't just be an else block thanks to the borrow checker
+        self.pending.insert(handle.clone());
+        let res = match *handle {
+            handle::Class::Scalar(ref name) => {
+                let class_bytes = try!(self.find_class_bytes(name)
+                                           .map_err(|err| Error::ClassNotFound(err)));
+                let (class_file, rcp) = try!(self.derive_class(&handle, &class_bytes));
+                panic!("not yet implemented")
+            },
+
+            handle::Class::Array(ref component_type) => {
+                // load the component type class, even though we don't use it, to ensure that any
+                // errors resulting from the load happen at the right time
+                match **component_type {
+                    handle::Type::Byte | handle::Type::Char | handle::Type::Double
+                        | handle::Type::Float | handle::Type::Int | handle::Type::Long
+                        | handle::Type::Short | handle::Type::Boolean => Ok(None),
+                    handle::Type::Reference(ref component_handle) =>
+                        self.load_class(component_handle).map(|class| Some(class))
+                }.and_then(|_| {
+                    let object_name = String::from("java/lang/Object");
+                    let object_handle = handle::Class::Scalar(object_name);
+                    self.load_class(&object_handle).map(|object_class| {
+                        let class = vm::Class::new_array(object_class, *component_type.clone());
+                        let rc = Rc::new(class);
+                        self.classes.insert(handle.clone(), rc.clone());
+                        rc
+                    })
+                })
+            },
+        };
+        self.pending.remove(&handle);
+        res
     }
 
     fn find_class_bytes(&mut self, name: &str) -> Result<Vec<u8>, io::Error> {
@@ -163,28 +163,33 @@ impl ClassLoader {
                 Err(_) => Err(Error::ClassFormat),
             }
         );
-        if parsed_class.major_version == 51 && parsed_class.minor_version == 0 {
-            let rcp = RuntimeConstantPool::new(&parsed_class.constant_pool);
+        try!(
+            if parsed_class.major_version != 51 || parsed_class.minor_version != 0 {
+                Err(Error::UnsupportedVersion {
+                    major: parsed_class.major_version,
+                    minor: parsed_class.minor_version,
+                })
+            } else {
+                Ok(())
+            }
+        );
+        let rcp = RuntimeConstantPool::new(&parsed_class.constant_pool);
+        try!({
             let this_entry = &rcp[parsed_class.this_class];
-            if let Some(RuntimeConstantPoolEntry::ClassRef(this_symref)) = *this_entry {
+            if let Some(RuntimeConstantPoolEntry::ClassRef(ref this_symref)) = *this_entry {
                 if *handle == this_symref.handle {
-                    let superclass =
-                        try!(self.resolve_class_symref(&rcp, parsed_class.super_class));
+                    let _ = try!(self.resolve_class_symref(&rcp, parsed_class.super_class));
                     for interface in &parsed_class.interfaces {
                         try!(self.resolve_class_symref(&rcp, *interface));
                     }
-                    Ok((parsed_class, rcp))
+                    Ok(())
                 } else {
                     Err(Error::NoClassDefFound)
                 }
             } else {
                 Err(Error::ClassFormat)
             }
-        } else {
-            Err(Error::UnsupportedVersion {
-                major: parsed_class.major_version,
-                minor: parsed_class.minor_version,
-            })
-        }
+        });
+        Ok((parsed_class, rcp))
     }
 }

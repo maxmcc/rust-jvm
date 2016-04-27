@@ -1,9 +1,6 @@
-use std::collections::HashMap;
-use std::cell::RefCell;
 use std::ops::Index;
-use std::rc::Rc;
 
-use model::class_file::constant_pool::*;
+use model::class_file::constant_pool::{ConstantPool, ConstantPoolInfo};
 use vm;
 use util::one_indexed_vec::OneIndexedVec;
 
@@ -32,11 +29,12 @@ pub mod handle {
         }
 
         pub fn new_multi(multi_type_str: &str) -> Vec<Self> {
-            let mut remainder = multi_type_str;
             let mut result = vec![];
+            let mut remainder = multi_type_str;
             while remainder.len() > 0 {
-                let (ty, remainder) = Self::new_partial(remainder);
+                let (ty, new_remainder) = Self::new_partial(remainder);
                 result.push(ty);
+                remainder = new_remainder;
             }
             result
         }

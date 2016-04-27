@@ -8,7 +8,6 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
-use model::class_file;
 use util::one_indexed_vec::OneIndexedVec;
 
 pub use vm::constant_pool::{handle, symref, RuntimeConstantPool};
