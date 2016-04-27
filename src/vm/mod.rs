@@ -2,15 +2,17 @@ pub mod bytecode;
 pub mod constant_pool;
 pub mod stack;
 pub mod heap;
-pub mod handle;
 mod class_loader;
 
-pub use vm::constant_pool::{symref, RuntimeConstantPool};
-pub use vm::heap::Object;
-
 use std::cell::RefCell;
-use std::rc::Rc;
 use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
+
+use model::class_file;
+use util::one_indexed_vec::OneIndexedVec;
+
+pub use vm::constant_pool::{handle, symref, RuntimeConstantPool};
+pub use vm::heap::Object;
 
 /// A value in the Java virtual machine.
 #[derive(Debug, Clone)]
@@ -60,12 +62,13 @@ impl Class {
             name: String::from("length"),
             ty: handle::Type::Int,
         };
-        let instance_fields = HashSet::new();
+        let empty_constant_pool = OneIndexedVec::from(vec![]);
+        let mut instance_fields = HashSet::new();
         instance_fields.insert(length_field);
         Class {
             symref: symref::Class { handle: handle::Class::Array(Box::new(component_type)) },
             superclass: Some(object_class.clone()),
-            constant_pool: Vec::new(),
+            constant_pool: RuntimeConstantPool::new(&empty_constant_pool),
             methods: HashMap::new(),
             class_fields: HashMap::new(),
             instance_fields: instance_fields,
@@ -78,4 +81,3 @@ pub struct Method {
     symref: symref::Method,
     code: Vec<bytecode::Instruction>,
 }
-
