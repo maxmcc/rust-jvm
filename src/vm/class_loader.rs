@@ -112,22 +112,22 @@ impl ClassLoader {
             handle::Class::Array(ref component_type) => {
                 // load the component type class, even though we don't use it, to ensure that any
                 // errors resulting from the load happen at the right time
-                match **component_type {
-                    handle::Type::Byte | handle::Type::Char | handle::Type::Double
-                        | handle::Type::Float | handle::Type::Int | handle::Type::Long
-                        | handle::Type::Short | handle::Type::Boolean => Ok(None),
-                    handle::Type::Reference(ref component_handle) =>
-                        self.load_class(component_handle).map(|class| Some(class))
-                }.and_then(|_| {
-                    let object_name = String::from("java/lang/Object");
-                    let object_handle = handle::Class::Scalar(object_name);
-                    self.load_class(&object_handle).map(|object_class| {
-                        let class = vm::Class::new_array(object_class, *component_type.clone());
-                        let rc = Rc::new(class);
-                        self.classes.insert(handle.clone(), rc.clone());
-                        rc
-                    })
-                })
+                try!(
+                    match **component_type {
+                        handle::Type::Byte | handle::Type::Char | handle::Type::Double
+                            | handle::Type::Float | handle::Type::Int | handle::Type::Long
+                            | handle::Type::Short | handle::Type::Boolean => Ok(None),
+                        handle::Type::Reference(ref component_handle) =>
+                            self.load_class(component_handle).map(|class| Some(class))
+                    }
+                );
+                let object_name = String::from("java/lang/Object");
+                let object_handle = handle::Class::Scalar(object_name);
+                let object_class = try!(self.load_class(&object_handle));
+                let class = vm::Class::new_array(object_class, *component_type.clone());
+                let rc = Rc::new(class);
+                self.classes.insert(handle.clone(), rc.clone());
+                Ok(rc)
             },
         };
         self.pending.remove(&handle);
@@ -146,6 +146,7 @@ impl ClassLoader {
     fn resolve_class_symref(&mut self, rcp: &RuntimeConstantPool, index: u16)
             -> Result<Rc<vm::Class>, Error> {
         if let Some(RuntimeConstantPoolEntry::ClassRef(ref class_symref)) = rcp[index] {
+            // TODO check access modifiers
             self.load_class(&class_symref.handle)
         } else {
             Err(Error::ClassFormat)
