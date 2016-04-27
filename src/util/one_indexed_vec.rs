@@ -1,6 +1,7 @@
+//! A `std::vec::Vec`, but 1-indexed instead of 0-indexed.
+
 use std::ops::Index;
 use std::ops::IndexMut;
-//! A `std::vec::Vec`, but 1-indexed instead of 0-indexed.
 
 /// Like a `std::vec::Vec`, but 1-indexed instead of 0-indexed.
 #[derive(Debug)]
