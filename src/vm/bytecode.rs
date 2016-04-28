@@ -1,3 +1,4 @@
+/// An bytecode instruction in the Java virtual machine.
 #[derive(Debug)]
 pub enum Instruction {
     Constant(op::Constant),
@@ -13,18 +14,17 @@ pub enum Instruction {
 }
 
 mod op {
+    use model::class_file::constant_pool_index;
+
+    pub type LocalVariableIndex = u16;
+    pub type BranchOffset = i32;
+
+    /// Push a constant value onto the operand stack.
     #[derive(Debug)]
     #[allow(non_camel_case_types)]
     pub enum Constant {
-        Nop,
         Aconst_null,
-        Iconst_m1,
-        Iconst_0,
-        Iconst_1,
-        Iconst_2,
-        Iconst_3,
-        Iconst_4,
-        Iconst_5,
+        Ipush { value: i32 },
         Lconst_0,
         Lconst_1,
         Fconst_0,
@@ -32,41 +32,18 @@ mod op {
         Fconst_2,
         Dconst_0,
         Dconst_1,
-        Bipush,
-        Sipush,
-        Ldc,
-        Ldc_w,
-        Ldc2_w,
+        Ldc { index: constant_pool_index },
     }
 
+    /// Load a value from a local variable or array onto the operand stack.
     #[derive(Debug)]
     #[allow(non_camel_case_types)]
     pub enum Load {
-        Iload,
-        Lload,
-        Fload,
-        Dload,
-        Aload,
-        Iload_0,
-        Iload_1,
-        Iload_2,
-        Iload_3,
-        Lload_0,
-        Lload_1,
-        Lload_2,
-        Lload_3,
-        Fload_0,
-        Fload_1,
-        Fload_2,
-        Fload_3,
-        Dload_0,
-        Dload_1,
-        Dload_2,
-        Dload_3,
-        Aload_0,
-        Aload_1,
-        Aload_2,
-        Aload_3,
+        Iload { index: LocalVariableIndex },
+        Lload { index: LocalVariableIndex },
+        Fload { index: LocalVariableIndex },
+        Dload { index: LocalVariableIndex },
+        Aload { index: LocalVariableIndex },
         Iaload,
         Laload,
         Faload,
@@ -77,34 +54,15 @@ mod op {
         Saload,
     }
 
+    /// Store a value on the operand stack into a local variable or array.
     #[derive(Debug)]
     #[allow(non_camel_case_types)]
     pub enum Store {
-        Istore,
-        Lstore,
-        Fstore,
-        Dstore,
-        Astore,
-        Istore_0,
-        Istore_1,
-        Istore_2,
-        Istore_3,
-        Lstore_0,
-        Lstore_1,
-        Lstore_2,
-        Lstore_3,
-        Fstore_0,
-        Fstore_1,
-        Fstore_2,
-        Fstore_3,
-        Dstore_0,
-        Dstore_1,
-        Dstore_2,
-        Dstore_3,
-        Astore_0,
-        Astore_1,
-        Astore_2,
-        Astore_3,
+        Istore { index: LocalVariableIndex },
+        Lstore { index: LocalVariableIndex },
+        Fstore { index: LocalVariableIndex },
+        Dstore { index: LocalVariableIndex },
+        Astore { index: LocalVariableIndex },
         Iastore,
         Lastore,
         Fastore,
@@ -115,6 +73,7 @@ mod op {
         Sastore,
     }
 
+    /// Manipulate values on the operand stack.
     #[derive(Debug)]
     #[allow(non_camel_case_types)]
     pub enum Stack {
@@ -129,48 +88,26 @@ mod op {
         Swap,
     }
 
+    /// Perform mathematical operations on stack values.
     #[derive(Debug)]
     #[allow(non_camel_case_types)]
     pub enum Math {
-        Iadd,
-        Ladd,
-        Fadd,
-        Dadd,
-        Isub,
-        Lsub,
-        Fsub,
-        Dsub,
-        Imul,
-        Lmul,
-        Fmul,
-        Dmul,
-        Idiv,
-        Ldiv,
-        Fdiv,
-        Ddiv,
-        Irem,
-        Lrem,
-        Frem,
-        Drem,
-        Ineg,
-        Lneg,
-        Fneg,
-        Dneg,
-        Ishl,
-        Lshl,
-        Ishr,
-        Lshr,
-        Iushr,
-        Lushr,
-        Iand,
-        Land,
-        Ior,
-        Lor,
-        Ixor,
-        Lxor,
-        Iinc,
+        Add,
+        Sub,
+        Mul,
+        Div,
+        Rem,
+        Neg,
+        Shl,
+        Shr,
+        Ushr,
+        And,
+        Or,
+        Xor,
+        Iinc { index: LocalVariableIndex, constant: i16 },
     }
 
+    /// Convert stack values between JVM types.
     #[derive(Debug)]
     pub enum Conversion {
         I2l,
@@ -190,6 +127,7 @@ mod op {
         I2s,
     }
 
+    /// Compare stack values conditionally alter control flow.
     #[derive(Debug)]
     #[allow(non_camel_case_types)]
     pub enum Comparison {
@@ -198,68 +136,61 @@ mod op {
         Fcmpg,
         Dcmpl,
         Dcmpg,
-        Ifeq,
-        Ifne,
-        Iflt,
-        Ifge,
-        Ifgt,
-        Ifle,
-        If_icmpeq,
-        If_icmpne,
-        If_icmplt,
-        If_icmpge,
-        If_icmpgt,
-        If_icmple,
-        If_acmpeq,
-        If_acmpne,
+        Ifeq { offset: BranchOffset },
+        Ifne { offset: BranchOffset },
+        Iflt { offset: BranchOffset },
+        Ifge { offset: BranchOffset },
+        Ifgt { offset: BranchOffset },
+        Ifle { offset: BranchOffset },
+        If_icmpeq { offset: BranchOffset },
+        If_icmpne { offset: BranchOffset },
+        If_icmplt { offset: BranchOffset },
+        If_icmpge { offset: BranchOffset },
+        If_icmpgt { offset: BranchOffset },
+        If_icmple { offset: BranchOffset },
+        If_acmpeq { offset: BranchOffset },
+        If_acmpne { offset: BranchOffset },
     }
 
+    /// Unconditionally modify control flow.
     #[derive(Debug)]
     pub enum Control {
-        Goto,
-        Jsr,
-        Ret,
-        Tableswitch,
-        Lookupswitch,
-        Ireturn,
-        Lreturn,
-        Freturn,
-        Dreturn,
-        Areturn,
-        Return,
+        Goto { offset: BranchOffset },
+        Tableswitch { bytes: Vec<u8> },
+        Lookupswitch { bytes: Vec<u8> },
+        ReturnValue,
+        ReturnVoid,
     }
 
+    /// Operations on reference types (objects and arrays).
     #[derive(Debug)]
     pub enum Reference {
-        Getstatic,
-        Putstatic,
-        Getfield,
-        Putfield,
-        Invokevirtual,
-        Invokespecial,
-        Invokestatic,
-        Invokeinterface,
-        Invokedynamic,
-        New,
-        Newarray,
-        Anewarray,
+        Getstatic { index: constant_pool_index },
+        Putstatic { index: constant_pool_index },
+        Getfield { index: constant_pool_index },
+        Putfield { index: constant_pool_index },
+        Invokevirtual { index: constant_pool_index },
+        Invokespecial { index: constant_pool_index },
+        Invokestatic { index: constant_pool_index },
+        New { index: constant_pool_index },
+        Newarray { element_type: u8 },
+        Anewarray { index: constant_pool_index },
         Arraylength,
         Athrow,
-        Checkcast,
-        Instanceof,
+        Checkcast { index: constant_pool_index },
+        Instanceof { index: constant_pool_index },
         Monitorenter,
         Monitorexit,
     }
 
+    /// Extended instructions supported by the JVM.
     #[derive(Debug)]
     #[allow(non_camel_case_types)]
     pub enum Extended {
-        Wide,
-        Multianewarray,
-        Ifnull,
-        Ifnonnull,
+        Multianewarray { index: constant_pool_index, dimensions: u8 },
+        Ifnull { offset: BranchOffset },
+        Ifnonnull { offset: BranchOffset },
         Goto_w,
-        Jsr_w,
     }
 }
 
