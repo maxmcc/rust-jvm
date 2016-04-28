@@ -1,6 +1,6 @@
 use std::ops::Index;
 
-use model::class_file::constant_pool::{ConstantPool, ConstantPoolInfo};
+use model::class_file::constant_pool::{constant_pool_index, ConstantPool, ConstantPoolInfo};
 use vm;
 use util::one_indexed_vec::OneIndexedVec;
 
@@ -155,7 +155,8 @@ pub enum RuntimeConstantPoolEntry {
     MethodRef(symref::Method),
     FieldRef(symref::Field),
     PrimitiveLiteral(vm::Value),
-    StringLiteral(Vec<u16>),
+    StringLiteralRef(constant_pool_index),
+    StringValue(ModifiedUtf8String),
 }
 
 #[derive(Debug)]
@@ -206,9 +207,7 @@ impl RuntimeConstantPool {
                 },
 
                 ConstantPoolInfo::String { string_index } => {
-                    let modified_utf8 = Self::force_string(&constant_pool[string_index as usize]);
-                    let utf16 = modified_utf8.to_utf16();
-                    Some(RuntimeConstantPoolEntry::StringLiteral(utf16))
+                    Some(RuntimeConstantPoolEntry::StringLiteralRef(string_index))
                 },
 
                 ConstantPoolInfo::Integer { bytes } => {
@@ -235,7 +234,10 @@ impl RuntimeConstantPool {
 
                 ConstantPoolInfo::NameAndType { .. } => None,
 
-                ConstantPoolInfo::Utf8 { .. } => None,
+                ConstantPoolInfo::Utf8 { ref bytes } => {
+                    let modified_utf8 = ModifiedUtf8String::new(bytes.to_vec());
+                    Some(RuntimeConstantPoolEntry::StringValue(modified_utf8))
+                },
 
                 ConstantPoolInfo::Unusable { .. } => None,
 
@@ -278,9 +280,17 @@ impl RuntimeConstantPool {
             _ => panic!("attempting to coerce non-UTF8 constant to String"),
         }
     }
+
+    pub fn lookup_raw_string(&self, index: constant_pool_index) -> String {
+        match self.entries[index as usize].unwrap() {
+            RuntimeConstantPoolEntry::StringValue(modified_utf8) => modified_utf8.to_string(),
+            _ => panic!("expected RuntimeConstantPoolInfo::StringValue"),
+        }
+    }
 }
 
-struct ModifiedUtf8String {
+#[derive(Debug)]
+pub struct ModifiedUtf8String {
     bytes: Vec<u8>,
 }
 

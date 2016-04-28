@@ -51,8 +51,8 @@ impl Class {
         let mut class_fields = HashMap::new();
         let mut instance_fields = HashSet::new();
         for field_info in class_file.fields {
-            let name = constant_pool.force_string(field_info.name_index);
-            let ty = Type::new(constant_pool.force_string(field_info.descriptor_index));
+            let name = constant_pool.lookup_raw_string(field_info.name_index);
+            let ty = Type::new(&constant_pool.lookup_raw_string(field_info.descriptor_index));
             let handle = handle::Field { name: name, ty: ty };
             if field_info.access_flags & access_flags::field_access_flags::ACC_STATIC != 0 {
                 let default_value =
@@ -72,10 +72,11 @@ impl Class {
 
         let mut methods = HashMap::new();
         for method_info in class_file.methods {
-            let name = constant_pool.force_string(method_info.name_index);
-            let descriptor = constant_pool.force_string(method_info.descriptor_index);
+            let name = constant_pool.lookup_raw_string(method_info.name_index);
+            let descriptor = constant_pool.lookup_raw_string(method_info.descriptor_index);
             let handle = handle::Method::new(&name, &descriptor);
-            methods.insert(handle, Method::new(method_info));
+            let method_symref = symref::Method { class: symref, handle: handle };
+            methods.insert(handle, Method::new(method_symref, method_info));
         }
 
         Class {
