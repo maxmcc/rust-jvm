@@ -5,6 +5,8 @@ use vm;
 use util::one_indexed_vec::OneIndexedVec;
 
 pub mod handle {
+    use vm::Value;
+
     #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub enum Type {
         Byte,
@@ -29,15 +31,17 @@ pub mod handle {
         }
 
         pub fn new_multi(multi_type_str: &str) -> (Vec<Self>, &str) {
-            let types = vec![];
-            let mut result = Ok(types);
+            let mut types = vec![];
             let mut remainder = multi_type_str;
-            while let Ok(types) = result {
-                result = Self::new_partial(remainder).map(|(ty, new_remainder)| {
-                    types.push(ty);
-                    remainder = new_remainder;
-                    types
-                });
+            {
+                let mut result = Ok(&mut types);
+                while let Ok(types) = result {
+                    result = Self::new_partial(remainder).map(|(ty, new_remainder)| {
+                        types.push(ty);
+                        remainder = new_remainder;
+                        types
+                    });
+                }
             }
             (types, remainder)
         }
@@ -66,6 +70,16 @@ pub mod handle {
                     Ok((array_type, rest))
                 },
                 _ => Err(())
+            }
+        }
+
+        pub fn default_value(&self) -> Value {
+            match *self {
+                Type::Byte | Type::Char | Type::Int | Type::Short | Type::Boolean => Value::Int(0),
+                Type::Double => Value::Double(0.0),
+                Type::Float => Value::Float(0.0),
+                Type::Long => Value::Long(0),
+                Type::Reference(_) => Value::NullReference,
             }
         }
     }
@@ -131,18 +145,18 @@ pub mod handle {
 pub mod symref {
     use vm::handle;
 
-    #[derive(Debug, PartialEq, Eq, Hash)]
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct Class {
         pub handle: handle::Class,
     }
 
-    #[derive(Debug, PartialEq, Eq, Hash)]
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct Field {
         pub class: Class,
         pub handle: handle::Field,
     }
 
-    #[derive(Debug, PartialEq, Eq, Hash)]
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct Method {
         pub class: Class,
         pub handle: handle::Method,
@@ -282,8 +296,9 @@ impl RuntimeConstantPool {
     }
 
     pub fn lookup_raw_string(&self, index: constant_pool_index) -> String {
-        match self.entries[index as usize].unwrap() {
-            RuntimeConstantPoolEntry::StringValue(modified_utf8) => modified_utf8.to_string(),
+        match self.entries[index as usize] {
+            Some(RuntimeConstantPoolEntry::StringValue(ref modified_utf8)) =>
+                modified_utf8.to_string(),
             _ => panic!("expected RuntimeConstantPoolInfo::StringValue"),
         }
     }

@@ -55,15 +55,7 @@ impl Class {
             let ty = Type::new(&constant_pool.lookup_raw_string(field_info.descriptor_index));
             let handle = handle::Field { name: name, ty: ty };
             if field_info.access_flags & access_flags::field_access_flags::ACC_STATIC != 0 {
-                let default_value =
-                    match ty {
-                        Type::Byte | Type::Char | Type::Int | Type::Short | Type::Boolean =>
-                            Value::Int(0),
-                        Type::Double => Value::Double(0.0),
-                        Type::Float => Value::Float(0.0),
-                        Type::Long => Value::Long(0),
-                        Type::Reference(_) => Value::NullReference,
-                    };
+                let default_value = handle.ty.default_value();
                 class_fields.insert(handle, default_value);
             } else {
                 instance_fields.insert(handle);
@@ -75,7 +67,7 @@ impl Class {
             let name = constant_pool.lookup_raw_string(method_info.name_index);
             let descriptor = constant_pool.lookup_raw_string(method_info.descriptor_index);
             let handle = handle::Method::new(&name, &descriptor);
-            let method_symref = symref::Method { class: symref, handle: handle };
+            let method_symref = symref::Method { class: symref.clone(), handle: handle.clone() };
             methods.insert(handle, Method::new(method_symref, method_info));
         }
 
