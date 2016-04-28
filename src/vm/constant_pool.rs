@@ -20,7 +20,7 @@ pub mod handle {
 
     impl Type {
         pub fn new(type_str: &str) -> Self {
-            let (ty, rest) = Self::new_partial(type_str);
+            let (ty, rest) = Self::new_partial(type_str).unwrap();
             if rest.len() > 0 {
                 panic!("extra content at end of type descriptor")
             } else {
@@ -28,41 +28,44 @@ pub mod handle {
             }
         }
 
-        pub fn new_multi(multi_type_str: &str) -> Vec<Self> {
-            let mut result = vec![];
+        pub fn new_multi(multi_type_str: &str) -> (Vec<Self>, &str) {
+            let types = vec![];
+            let mut result = Ok(types);
             let mut remainder = multi_type_str;
-            while remainder.len() > 0 {
-                let (ty, new_remainder) = Self::new_partial(remainder);
-                result.push(ty);
-                remainder = new_remainder;
+            while let Ok(types) = result {
+                result = Self::new_partial(remainder).map(|(ty, new_remainder)| {
+                    types.push(ty);
+                    remainder = new_remainder;
+                    types
+                });
             }
-            result
+            (types, remainder)
         }
 
-        pub fn new_partial(type_str: &str) -> (Self, &str) {
+        fn new_partial(type_str: &str) -> Result<(Self, &str), ()> {
             let (specifier, rest) = type_str.split_at(1);
             match specifier {
-                "B" => (Type::Byte, rest),
-                "C" => (Type::Char, rest),
-                "D" => (Type::Double, rest),
-                "F" => (Type::Float, rest),
-                "I" => (Type::Int, rest),
-                "J" => (Type::Long, rest),
-                "S" => (Type::Short, rest),
-                "Z" => (Type::Boolean, rest),
+                "B" => Ok((Type::Byte, rest)),
+                "C" => Ok((Type::Char, rest)),
+                "D" => Ok((Type::Double, rest)),
+                "F" => Ok((Type::Float, rest)),
+                "I" => Ok((Type::Int, rest)),
+                "J" => Ok((Type::Long, rest)),
+                "S" => Ok((Type::Short, rest)),
+                "Z" => Ok((Type::Boolean, rest)),
                 "L" => {
                     let end_index = rest.find(';').unwrap();
                     let (name_slice, rest) = rest.split_at(end_index);
                     let name = String::from(name_slice);
                     let scalar_type = Type::Reference(Class::Scalar(name));
-                    (scalar_type, rest.split_at(1).1)
+                    Ok((scalar_type, rest.split_at(1).1))
                 },
                 "[" => {
-                    let (component_type, rest) = Self::new_partial(rest);
+                    let (component_type, rest) = try!(Self::new_partial(rest));
                     let array_type = Type::Reference(Class::Array(Box::new(component_type)));
-                    (array_type, rest)
+                    Ok((array_type, rest))
                 },
-                _ => panic!("invalid type descriptor")
+                _ => Err(())
             }
         }
     }
@@ -97,6 +100,31 @@ pub mod handle {
         pub params: Vec<Type>,
         pub return_ty: Option<Type>,
     }
+
+    impl Method {
+        pub fn new(name: &str, descriptor: &str) -> Self {
+            if !descriptor.starts_with('(') {
+                panic!("invalid method descriptor");
+            }
+            let params_str = descriptor.split_at(1).1;
+            let (params, remainder) = Type::new_multi(params_str);
+            let (close_paren, return_ty_str) = remainder.split_at(1);
+            if close_paren != ")" {
+                panic!("invalid method descriptor");
+            }
+            let return_ty =
+                if return_ty_str == "V" {
+                    None
+                } else {
+                    Some(Type::new(return_ty_str))
+                };
+            Method {
+                name: String::from(name),
+                params: params,
+                return_ty: return_ty
+            }
+        }
+    }
 }
 
 /// A reference to an unresolved structure in the runtime constant pool.
@@ -126,8 +154,8 @@ pub enum RuntimeConstantPoolEntry {
     ClassRef(symref::Class),
     MethodRef(symref::Method),
     FieldRef(symref::Field),
-    Literal(vm::Value),
-    UninstantiatedLiteral(Vec<u16>),
+    PrimitiveLiteral(vm::Value),
+    StringLiteral(Vec<u16>),
 }
 
 #[derive(Debug)]
@@ -172,25 +200,7 @@ impl RuntimeConstantPool {
                     let (name, descriptor) =
                         Self::force_name_and_type(&constant_pool,
                                                   &constant_pool[name_and_type_index as usize]);
-                    let (first, rest) = descriptor.split_at(1);
-                    if first != "(" {
-                        panic!("invalid method descriptor: no parameter descriptor")
-                    }
-                    let end_index = rest.rfind(')').unwrap();
-                    let (param_descriptor, rest) = rest.split_at(end_index);
-                    let params = handle::Type::new_multi(param_descriptor);
-                    let return_ty_descriptor = rest.split_at(1).1;
-                    let return_ty =
-                        if return_ty_descriptor == "V" {
-                            None
-                        } else {
-                            Some(handle::Type::new(return_ty_descriptor))
-                        };
-                    let handle = handle::Method {
-                        name: name,
-                        params: params,
-                        return_ty: return_ty
-                    };
+                    let handle = handle::Method::new(&name, &descriptor);
                     let method_symref = symref::Method { class: class_symref, handle: handle };
                     Some(RuntimeConstantPoolEntry::MethodRef(method_symref))
                 },
@@ -198,29 +208,29 @@ impl RuntimeConstantPool {
                 ConstantPoolInfo::String { string_index } => {
                     let modified_utf8 = Self::force_string(&constant_pool[string_index as usize]);
                     let utf16 = modified_utf8.to_utf16();
-                    Some(RuntimeConstantPoolEntry::UninstantiatedLiteral(utf16))
+                    Some(RuntimeConstantPoolEntry::StringLiteral(utf16))
                 },
 
                 ConstantPoolInfo::Integer { bytes } => {
                     let value = vm::Value::Int(bytes as i32);
-                    Some(RuntimeConstantPoolEntry::Literal(value))
+                    Some(RuntimeConstantPoolEntry::PrimitiveLiteral(value))
                 },
 
                 ConstantPoolInfo::Float { bytes } => {
                     let value = vm::Value::Float(bytes as f32);
-                    Some(RuntimeConstantPoolEntry::Literal(value))
+                    Some(RuntimeConstantPoolEntry::PrimitiveLiteral(value))
                 },
 
                 ConstantPoolInfo::Long { high_bytes, low_bytes } => {
                     let bits = ((high_bytes as i64) << 32) & (low_bytes as i64);
                     let value = vm::Value::Long(bits);
-                    Some(RuntimeConstantPoolEntry::Literal(value))
+                    Some(RuntimeConstantPoolEntry::PrimitiveLiteral(value))
                 },
 
                 ConstantPoolInfo::Double { high_bytes, low_bytes } => {
                     let bits = ((high_bytes as u64) << 32) & (low_bytes as u64);
                     let value = vm::Value::Double(bits as f64);
-                    Some(RuntimeConstantPoolEntry::Literal(value))
+                    Some(RuntimeConstantPoolEntry::PrimitiveLiteral(value))
                 },
 
                 ConstantPoolInfo::NameAndType { .. } => None,
@@ -336,7 +346,7 @@ impl ModifiedUtf8String {
                 _ => panic!("error decoding modified UTF-8: illegal byte"),
             }
         }
-        String::from_utf8(utf8).unwrap()
+        String::from_utf8(utf8).expect("unexpected error decoding modified UTF-8")
     }
 
     fn to_utf16(&self) -> Vec<u16> {
