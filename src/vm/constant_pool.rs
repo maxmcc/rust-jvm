@@ -178,10 +178,10 @@ pub struct RuntimeConstantPool {
     entries: OneIndexedVec<Option<RuntimeConstantPoolEntry>>,
 }
 
-impl Index<u16> for RuntimeConstantPool {
+impl Index<constant_pool_index> for RuntimeConstantPool {
     type Output = Option<RuntimeConstantPoolEntry>;
 
-    fn index(&self, index: u16) -> &Self::Output {
+    fn index(&self, index: constant_pool_index) -> &Self::Output {
         &self.entries[index as usize]
     }
 }
