@@ -160,7 +160,7 @@ impl<'a> Frame<'a> {
                         let resolved_method = resolved_class.resolve_method(symref);
                         // TODO: check for <clinit> and <init>
                         // TODO: check protected accesses
-                        let num_args = symref.handle.params.len();
+                        let num_args = symref.sig.params.len();
                         let args = self.pop_as_locals(num_args + 1);
                         let object_class = {
                             let object_value = &args[0];

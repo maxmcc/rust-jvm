@@ -2,158 +2,8 @@ use std::ops::Index;
 
 pub use model::class_file::constant_pool::constant_pool_index;
 use model::class_file::constant_pool::{ConstantPool, ConstantPoolInfo};
-use vm::{self, symref};
+use vm::{self, sig, symref};
 use util::one_indexed_vec::OneIndexedVec;
-
-/// Descriptors for things in the runtime constant pool.
-pub mod handle {
-    use vm::Value;
-
-    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-    pub enum Type {
-        Byte,
-        Char,
-        Double,
-        Float,
-        Int,
-        Long,
-        Short,
-        Boolean,
-        Reference(Class),
-    }
-
-    impl Type {
-        pub fn new(type_str: &str) -> Self {
-            let (ty, rest) = Self::new_partial(type_str).unwrap();
-            if rest.len() > 0 {
-                panic!("extra content at end of type descriptor")
-            } else {
-                ty
-            }
-        }
-
-        pub fn new_multi(multi_type_str: &str) -> (Vec<Self>, &str) {
-            let mut types = vec![];
-            let mut remainder = multi_type_str;
-            {
-                let mut result = Ok(&mut types);
-                while let Ok(types) = result {
-                    result = Self::new_partial(remainder).map(|(ty, new_remainder)| {
-                        types.push(ty);
-                        remainder = new_remainder;
-                        types
-                    });
-                }
-            }
-            (types, remainder)
-        }
-
-        fn new_partial(type_str: &str) -> Result<(Self, &str), ()> {
-            let (specifier, rest) = type_str.split_at(1);
-            match specifier {
-                "B" => Ok((Type::Byte, rest)),
-                "C" => Ok((Type::Char, rest)),
-                "D" => Ok((Type::Double, rest)),
-                "F" => Ok((Type::Float, rest)),
-                "I" => Ok((Type::Int, rest)),
-                "J" => Ok((Type::Long, rest)),
-                "S" => Ok((Type::Short, rest)),
-                "Z" => Ok((Type::Boolean, rest)),
-                "L" => {
-                    let end_index = rest.find(';').unwrap();
-                    let (name_slice, rest) = rest.split_at(end_index);
-                    let name = String::from(name_slice);
-                    let scalar_type = Type::Reference(Class::Scalar(name));
-                    Ok((scalar_type, rest.split_at(1).1))
-                },
-                "[" => {
-                    let (component_type, rest) = try!(Self::new_partial(rest));
-                    let array_type = Type::Reference(Class::Array(Box::new(component_type)));
-                    Ok((array_type, rest))
-                },
-                _ => Err(())
-            }
-        }
-
-        pub fn default_value(&self) -> Value {
-            match *self {
-                Type::Byte | Type::Char | Type::Int | Type::Short | Type::Boolean => Value::Int(0),
-                Type::Double => Value::Double(0.0),
-                Type::Float => Value::Float(0.0),
-                Type::Long => Value::Long(0),
-                Type::Reference(_) => Value::NullReference,
-            }
-        }
-    }
-
-    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-    pub enum Class {
-        Scalar(String),
-        Array(Box<Type>),
-    }
-
-    impl Class {
-        pub fn new(name: &str) -> Self {
-            if name.starts_with('[') {
-                let (_, component_type_str) = name.split_at(1);
-                let component_type = Type::new(component_type_str);
-                Class::Array(Box::new(component_type))
-            } else {
-                Class::Scalar(String::from(name))
-            }
-        }
-
-        pub fn get_package(&self) -> Option<String> {
-            match *self {
-                Class::Scalar(ref name) => {
-                    match name.rfind('/') {
-                        None => Some(String::from("")),
-                        Some(index) => Some(String::from(name.split_at(index).0)),
-                    }
-                },
-                Class::Array(_) => None,
-            }
-        }
-    }
-
-    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-    pub struct Field {
-        pub name: String,
-        pub ty: Type,
-    }
-
-    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-    pub struct Method {
-        pub name: String,
-        pub params: Vec<Type>,
-        pub return_ty: Option<Type>,
-    }
-
-    impl Method {
-        pub fn new(name: &str, descriptor: &str) -> Self {
-            if !descriptor.starts_with('(') {
-                panic!("invalid method descriptor");
-            }
-            let params_str = descriptor.split_at(1).1;
-            let (params, remainder) = Type::new_multi(params_str);
-            let (close_paren, return_ty_str) = remainder.split_at(1);
-            if close_paren != ")" {
-                panic!("invalid method descriptor");
-            }
-            let return_ty =
-                if return_ty_str == "V" {
-                    None
-                } else {
-                    Some(Type::new(return_ty_str))
-                };
-            Method {
-                name: String::from(name),
-                params: params,
-                return_ty: return_ty
-            }
-        }
-    }
-}
 
 #[derive(Debug)]
 pub enum RuntimeConstantPoolEntry {
@@ -195,9 +45,9 @@ impl RuntimeConstantPool {
                     let (name, descriptor) =
                         Self::force_name_and_type(&constant_pool,
                                                   &constant_pool[name_and_type_index as usize]);
-                    let ty = handle::Type::new(&descriptor);
-                    let handle = handle::Field { name: name, ty: ty };
-                    let field_symref = symref::Field { class: class_symref, handle: handle };
+                    let ty = sig::Type::new(&descriptor);
+                    let sig = sig::Field { name: name, ty: ty };
+                    let field_symref = symref::Field { class: class_symref, sig: sig };
                     Some(RuntimeConstantPoolEntry::FieldRef(field_symref))
                 },
 
@@ -207,8 +57,8 @@ impl RuntimeConstantPool {
                     let (name, descriptor) =
                         Self::force_name_and_type(&constant_pool,
                                                   &constant_pool[name_and_type_index as usize]);
-                    let handle = handle::Method::new(&name, &descriptor);
-                    let method_symref = symref::Method { class: class_symref, handle: handle };
+                    let sig = sig::Method::new(&name, &descriptor);
+                    let method_symref = symref::Method { class: class_symref, sig: sig };
                     Some(RuntimeConstantPoolEntry::MethodRef(method_symref))
                 },
 
@@ -258,7 +108,7 @@ impl RuntimeConstantPool {
         match *info {
             ConstantPoolInfo::Class { name_index } => {
                 let name = Self::force_string(&constant_pool[name_index as usize]).to_string();
-                symref::Class { handle: handle::Class::new(&name) }
+                symref::Class { sig: sig::Class::new(&name) }
             },
             _ => panic!("expected ConstantPoolInfo::Class"),
         }

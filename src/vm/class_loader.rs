@@ -10,7 +10,7 @@ use nom;
 
 use model::class_file::ClassFile;
 use parser::class_file;
-use vm::{self, handle, symref};
+use vm::{self, sig, symref};
 use vm::constant_pool::{RuntimeConstantPool, RuntimeConstantPoolEntry};
 
 #[derive(Debug)]
@@ -74,8 +74,8 @@ impl error::Error for Error {
 
 #[derive(Debug)]
 pub struct ClassLoader {
-    classes: HashMap<handle::Class, Rc<vm::Class>>,
-    pending: HashSet<handle::Class>,
+    classes: HashMap<sig::Class, Rc<vm::Class>>,
+    pending: HashSet<sig::Class>,
 }
 
 impl ClassLoader {
@@ -106,11 +106,11 @@ impl ClassLoader {
 
     pub fn resolve_class(&mut self, symref: &symref::Class) -> Result<Rc<vm::Class>, Error> {
         // TODO check access modifiers
-        self.load_class(&symref.handle)
+        self.load_class(&symref.sig)
     }
 
     /// Derives the specified class and its interfaces, but not its superclass.
-    fn derive_class(&mut self, original_name: &str, handle: &handle::Class, class_bytes: &[u8])
+    fn derive_class(&mut self, original_name: &str, sig: &sig::Class, class_bytes: &[u8])
             -> Result<(ClassFile, RuntimeConstantPool), Error> {
         // TODO we discard the parse errors, but it's so hard to fix that...
         let parsed_class = try!(
@@ -134,7 +134,7 @@ impl ClassLoader {
         try!({
             let this_entry = &rcp[parsed_class.this_class];
             if let Some(RuntimeConstantPoolEntry::ClassRef(ref this_symref)) = *this_entry {
-                if *handle == this_symref.handle {
+                if *sig == this_symref.sig {
                     let super_symref = try!(Self::get_class_ref(&rcp, parsed_class.super_class));
                     let _ = try!(self.resolve_class(&super_symref));
                     // TODO: Check that the entry is actually an interface
@@ -154,7 +154,7 @@ impl ClassLoader {
     }
 
     /// Derives the super class (if it exists) of the specified class.
-    fn derive_super_class(&mut self, name: &str, handle: &handle::Class, rcp: &RuntimeConstantPool,
+    fn derive_super_class(&mut self, name: &str, sig: &sig::Class, rcp: &RuntimeConstantPool,
                           class_file: &ClassFile) -> Result<Option<Rc<vm::Class>>, Error> {
         if class_file.super_class == 0 {
             Ok(None)
@@ -174,11 +174,11 @@ impl ClassLoader {
     ///
     /// This implementation does not attempt to perform bytecode verification; we assume that any
     /// class files we attempt to load are valid.
-    fn load_class_bytes(&mut self, name: &str, handle: &handle::Class, class_bytes: &[u8])
+    fn load_class_bytes(&mut self, name: &str, sig: &sig::Class, class_bytes: &[u8])
                             -> Result<Rc<vm::Class>, Error> {
-        let (class_file, rcp) = try!(self.derive_class(name, handle, class_bytes));
-        let super_class = try!(self.derive_super_class(name, handle, &rcp, &class_file));
-        Ok(Rc::new(vm::Class::new(symref::Class { handle: handle.clone() }, super_class, rcp,
+        let (class_file, rcp) = try!(self.derive_class(name, sig, class_bytes));
+        let super_class = try!(self.derive_super_class(name, sig, &rcp, &class_file));
+        Ok(Rc::new(vm::Class::new(symref::Class { sig: sig.clone() }, super_class, rcp,
                                   class_file)))
     }
 
@@ -192,19 +192,19 @@ impl ClassLoader {
     ///
     /// This implementation does not attempt to perform bytecode verification; we assume that any
     /// class files we attempt to load are valid.
-    pub fn load_class(&mut self, handle: &handle::Class) -> Result<Rc<vm::Class>, Error> {
-        if self.pending.contains(&handle) {
+    pub fn load_class(&mut self, sig: &sig::Class) -> Result<Rc<vm::Class>, Error> {
+        if self.pending.contains(&sig) {
             // we're already resolving this name
             return Err(Error::ClassCircularity)
-        } else if let Some(class) = self.classes.get(&handle) {
+        } else if let Some(class) = self.classes.get(&sig) {
             // the class is already resolved
             return Ok(class.clone())
         }
 
         // this can't just be an else block thanks to the borrow checker
-        self.pending.insert(handle.clone());
-        let res = match *handle {
-            handle::Class::Scalar(ref name) => {
+        self.pending.insert(sig.clone());
+        let res = match *sig {
+            sig::Class::Scalar(ref name) => {
                 let class_bytes = try!(self.find_class_bytes(name)
                                        .map_err(|e| Error::ClassNotFound {
                                            name: name.clone(),
@@ -212,31 +212,31 @@ impl ClassLoader {
                                        }));
                 // TODO: Catch errors in recursive loading and wrap them in a NoClassDefFoundError
                 // as specified in §5.3
-                self.load_class_bytes(name, handle, class_bytes.as_slice())
+                self.load_class_bytes(name, sig, class_bytes.as_slice())
             },
 
-            handle::Class::Array(ref component_type) => {
+            sig::Class::Array(ref component_type) => {
                 // load the component type class, even though we don't use it, to ensure that any
                 // errors resulting from the load happen at the right time
                 try!(
                     match **component_type {
-                        handle::Type::Byte | handle::Type::Char | handle::Type::Double
-                            | handle::Type::Float | handle::Type::Int | handle::Type::Long
-                            | handle::Type::Short | handle::Type::Boolean => Ok(None),
-                        handle::Type::Reference(ref component_handle) =>
-                            self.load_class(component_handle).map(|class| Some(class))
+                        sig::Type::Byte | sig::Type::Char | sig::Type::Double
+                            | sig::Type::Float | sig::Type::Int | sig::Type::Long
+                            | sig::Type::Short | sig::Type::Boolean => Ok(None),
+                        sig::Type::Reference(ref component_sig) =>
+                            self.load_class(component_sig).map(|class| Some(class))
                     }
                 );
                 let object_name = String::from("java/lang/Object");
-                let object_handle = handle::Class::Scalar(object_name);
-                let object_class = try!(self.load_class(&object_handle));
+                let object_sig = sig::Class::Scalar(object_name);
+                let object_class = try!(self.load_class(&object_sig));
                 let class = vm::Class::new_array(object_class, *component_type.clone());
                 let rc = Rc::new(class);
-                self.classes.insert(handle.clone(), rc.clone());
+                self.classes.insert(sig.clone(), rc.clone());
                 Ok(rc)
             },
         };
-        self.pending.remove(&handle);
+        self.pending.remove(&sig);
         res
     }
 }
