@@ -42,14 +42,18 @@ impl<'a> Frame<'a> {
     }
 
     pub fn run(mut self) -> Option<Value> {
-        macro_rules! with_index {
-            ($read_next_action: ident, $with_i: ident) => ({
-                let i = self.$read_next_action() as constant_pool_index;
-                $with_i!(i);
+        macro_rules! with {
+            ($read_next_action: ident, $k: ident) => ({
+                let value = self.$read_next_action() as u16;
+                $k!(value);
             })
         }
 
-        macro_rules! ldc_action {
+        macro_rules! do_ipush {
+            ($value: ident) => (self.operand_stack.push(Value::Int($value as i32)))
+        }
+
+        macro_rules! do_ldc {
             ($index: ident) => ({
                 match self.runtime_constant_pool[$index] {
                     Some(RuntimeConstantPoolEntry::PrimitiveLiteral(ref value)) =>
@@ -77,16 +81,10 @@ impl<'a> Frame<'a> {
                 opcode::FCONST_2 => self.operand_stack.push(Value::Float(2.0)),
                 opcode::DCONST_0 => self.operand_stack.push(Value::Double(0.0)),
                 opcode::DCONST_1 => self.operand_stack.push(Value::Double(1.0)),
-                opcode::BIPUSH => {
-                    let value = Value::Int(self.read_next_byte() as i32);
-                    self.operand_stack.push(value)
-                },
-                opcode::SIPUSH => {
-                    let value = Value::Int(self.read_next_short() as i32);
-                    self.operand_stack.push(value)
-                },
-                opcode::LDC => with_index!(read_next_byte, ldc_action),
-                opcode::LDC_W | opcode::LDC2_W => with_index!(read_next_short, ldc_action),
+                opcode::BIPUSH => with!(read_next_byte, do_ipush),
+                opcode::SIPUSH => with!(read_next_short, do_ipush),
+                opcode::LDC => with!(read_next_byte, do_ldc),
+                opcode::LDC_W | opcode::LDC2_W => with!(read_next_short, do_ldc),
 
                 _ => panic!("undefined or reserved opcode"),
             }
