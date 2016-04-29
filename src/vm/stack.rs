@@ -1,4 +1,3 @@
-
 use vm::{Method, Value};
 use vm::constant_pool::{constant_pool_index, RuntimeConstantPool, RuntimeConstantPoolEntry};
 
@@ -43,6 +42,23 @@ impl<'a> Frame<'a> {
     }
 
     pub fn run(mut self) -> Option<Value> {
+        macro_rules! with_index {
+            ($read_next_action: ident, $with_i: ident) => ({
+                let i = self.$read_next_action();
+                $with_i!()(i as constant_pool_index);
+            })
+        }
+
+        macro_rules! ldc_action {
+            () => ({
+                |index| match self.runtime_constant_pool[index] {
+                    Some(RuntimeConstantPoolEntry::PrimitiveLiteral(ref value)) =>
+                        self.operand_stack.push(value.clone()),
+                    _ => panic!("illegal or unsupported constant pool load"),
+                }
+            });
+        }
+
         loop {
             match self.read_next_byte() {
                 opcode::NOP => (),
@@ -69,22 +85,8 @@ impl<'a> Frame<'a> {
                     let value = Value::Int(self.read_next_short() as i32);
                     self.operand_stack.push(value)
                 },
-                opcode::LDC => {
-                    let index = self.read_next_byte() as constant_pool_index;
-                    match self.runtime_constant_pool[index] {
-                        Some(RuntimeConstantPoolEntry::PrimitiveLiteral(ref value)) =>
-                            self.operand_stack.push(value.clone()),
-                        _ => panic!("illegal or unsupported constant pool load"),
-                    }
-                },
-                opcode::LDC_W | opcode::LDC2_W => {
-                    let index = self.read_next_short();
-                    match self.runtime_constant_pool[index] {
-                        Some(RuntimeConstantPoolEntry::PrimitiveLiteral(ref value)) =>
-                            self.operand_stack.push(value.clone()),
-                        _ => panic!("illegal or unsupported constant pool load"),
-                    }
-                },
+                opcode::LDC => with_index!(read_next_byte, ldc_action),
+                opcode::LDC_W | opcode::LDC2_W => with_index!(read_next_short, ldc_action),
 
                 _ => panic!("undefined or reserved opcode"),
             }
