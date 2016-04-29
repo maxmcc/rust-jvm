@@ -230,7 +230,10 @@ impl<'a> Frame<'a> {
                     }
                 },
 
-                _ => panic!("undefined or reserved opcode"),
+                _ => {
+                    println!("{}", self.method_code.code[(self.pc as usize) - 1]);
+                    panic!("undefined or reserved opcode")
+                },
             }
         }
     }
