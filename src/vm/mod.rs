@@ -15,6 +15,7 @@ use util::one_indexed_vec::OneIndexedVec;
 pub use vm::constant_pool::RuntimeConstantPool;
 pub use vm::heap::Object;
 pub use vm::class_loader::ClassLoader;
+use vm::stack::Frame;
 use model::class_file::{constant_pool_index, ClassFile, MethodInfo};
 use model::class_file::access_flags;
 use model::class_file::attribute::{AttributeInfo, ExceptionTableEntry};
@@ -223,9 +224,10 @@ pub struct Class {
     /// The runtime constant pool of the current class, created from the constant pool defined in
     /// the `.class` file that has been loaded.
     constant_pool: RuntimeConstantPool,
-    /// The fields of this class, including both `static` and non-`static` fields. We don't
-    /// separate them because it makes throwing the correct runtime `Error` easier.
-    fields: HashSet<sig::Field>,
+    /// The fields of this class mapped to their access flags. This map includes both `static` and
+    /// non-`static` fields. We don't separate them because it makes it easier to throw the correct
+    /// runtime `Error` when certain invalid conditions are detected.
+    fields: HashMap<sig::Field, u16>,
     /// The constants which populate the `static final` fields of this class. We don't immediately
     /// put these values into `class_fields` because they can include `String` literals, and we may
     /// not have loaded the `String` class yet. (This is also consistent with the spec, which
@@ -233,6 +235,8 @@ pub struct Class {
     field_constants: HashMap<sig::Field, constant_pool_index>,
     /// The methods of the class, mapped to their method structures.
     methods: HashMap<sig::Method, Method>,
+    /// A flag which is only set to `true` once this class has been initialized.
+    initialized: bool,
     /// Once this class has been initialized, this map contains the current value for each `static`
     /// field. Prior to initialization, the map is empty.
     field_values: HashMap<sig::Field, Value>,
@@ -241,7 +245,7 @@ pub struct Class {
 impl Class {
     pub fn new(symref: symref::Class, superclass: Option<Rc<Class>>,
                constant_pool: RuntimeConstantPool, class_file: ClassFile) -> Self {
-        let mut fields = HashSet::new();
+        let mut fields = HashMap::new();
         let mut field_constants = HashMap::new();
         for field_info in class_file.fields {
             let name = constant_pool.lookup_raw_string(field_info.name_index);
@@ -254,7 +258,7 @@ impl Class {
                     }
                 }
             }
-            fields.insert(sig);
+            fields.insert(sig, field_info.access_flags);
         }
 
         let mut methods = HashMap::new();
@@ -274,6 +278,7 @@ impl Class {
             fields: fields,
             field_constants: field_constants,
             methods: methods,
+            initialized: false,
             field_values: HashMap::new(),
         }
     }
@@ -287,8 +292,8 @@ impl Class {
             ty: sig::Type::Int,
         };
         let empty_constant_pool = OneIndexedVec::from(vec![]);
-        let mut fields = HashSet::new();
-        fields.insert(length_field);
+        let mut fields = HashMap::new();
+        fields.insert(length_field, 0x1011);
         Class {
             symref: symref::Class { sig: sig::Class::Array(Box::new(component_type)) },
             access_flags: access_flags,
@@ -297,6 +302,7 @@ impl Class {
             fields: fields,
             field_constants: HashMap::new(),
             methods: HashMap::new(),
+            initialized: false,
             field_values: HashMap::new(),
         }
     }
@@ -351,6 +357,58 @@ impl Class {
                 superclass.is_descendant(other)
             })
         }
+    }
+
+    fn initialize(&mut self, class_loader: &mut ClassLoader) {
+        if self.initialized {
+            return;
+        } else {
+            self.initialized = true;
+        }
+
+        // initialize all static fields to their default values
+        for (sig, access_flags) in &self.fields {
+            if access_flags & access_flags::field_access_flags::ACC_STATIC != 0 {
+                let default_value = sig.ty.default_value();
+                self.field_values.insert(sig.clone(), default_value);
+            }
+        }
+
+        // initialize fields with a ConstantValue attribute to those constant values
+        for (sig, index) in &self.field_constants {
+            let value = self.constant_pool.resolve_literal(*index, class_loader).unwrap();
+            self.field_values.insert(sig.clone(), value);
+        }
+
+        // locate the class initializer method and execute it
+        let clinit_sig = sig::Method {
+            name: String::from("<clinit>"),
+            params: vec![],
+            return_ty: None,
+        };
+        match self.methods.get(&clinit_sig) {
+            None => (),
+            Some(ref method) => {
+                let method_code = method.method_code.as_ref().unwrap();
+                let frame = Frame::new(&self, method_code, vec![]);
+                match frame.run(class_loader) {
+                    None => (),
+                    Some(_) => panic!("<clinit> returned a value!"),
+                }
+            },
+        };
+    }
+
+    pub fn resolve_and_get_field(&mut self, symref: &symref::Field, class_loader: &mut ClassLoader)
+            -> Value {
+        self.initialize(class_loader);
+        // TODO we're ignoring the superinterfaces
+        // TODO: also not checking for static
+        let value_opt = self.field_values.get(&symref.sig).map(|v| v.clone());
+        value_opt.unwrap_or_else(move || {
+            let mut superclass: Rc<Class> = self.superclass.as_ref().expect("NoSuchFieldError").clone();
+            Rc::get_mut(&mut superclass).unwrap().resolve_and_get_field(symref, class_loader)
+        })
     }
 }
 

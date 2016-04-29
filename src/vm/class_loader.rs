@@ -132,7 +132,7 @@ impl ClassLoader {
             }
         );
         try!(
-            if parsed_class.major_version != 52 || parsed_class.minor_version != 0 {
+            if parsed_class.major_version != 51 || parsed_class.minor_version != 0 {
                 Err(Error::UnsupportedVersion {
                     major: parsed_class.major_version,
                     minor: parsed_class.minor_version,

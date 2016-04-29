@@ -2,7 +2,9 @@ use std::ops::Index;
 
 pub use model::class_file::constant_pool::constant_pool_index;
 use model::class_file::constant_pool::{ConstantPool, ConstantPoolInfo};
-use vm::{self, sig, symref};
+use vm::{self, sig, symref, Value};
+use vm::class_loader;
+use vm::class_loader::ClassLoader;
 use util::one_indexed_vec::OneIndexedVec;
 
 #[derive(Debug)]
@@ -10,8 +12,8 @@ pub enum RuntimeConstantPoolEntry {
     ClassRef(symref::Class),
     MethodRef(symref::Method),
     FieldRef(symref::Field),
-    PrimitiveLiteral(vm::Value),
-    StringLiteralRef(constant_pool_index),
+    ResolvedLiteral(vm::Value),
+    UnresolvedString(constant_pool_index),
     StringValue(ModifiedUtf8String),
 }
 
@@ -63,29 +65,29 @@ impl RuntimeConstantPool {
                 },
 
                 ConstantPoolInfo::String { string_index } => {
-                    Some(RuntimeConstantPoolEntry::StringLiteralRef(string_index))
+                    Some(RuntimeConstantPoolEntry::UnresolvedString(string_index))
                 },
 
                 ConstantPoolInfo::Integer { bytes } => {
                     let value = vm::Value::Int(bytes as i32);
-                    Some(RuntimeConstantPoolEntry::PrimitiveLiteral(value))
+                    Some(RuntimeConstantPoolEntry::ResolvedLiteral(value))
                 },
 
                 ConstantPoolInfo::Float { bytes } => {
                     let value = vm::Value::Float(bytes as f32);
-                    Some(RuntimeConstantPoolEntry::PrimitiveLiteral(value))
+                    Some(RuntimeConstantPoolEntry::ResolvedLiteral(value))
                 },
 
                 ConstantPoolInfo::Long { high_bytes, low_bytes } => {
                     let bits = ((high_bytes as i64) << 32) & (low_bytes as i64);
                     let value = vm::Value::Long(bits);
-                    Some(RuntimeConstantPoolEntry::PrimitiveLiteral(value))
+                    Some(RuntimeConstantPoolEntry::ResolvedLiteral(value))
                 },
 
                 ConstantPoolInfo::Double { high_bytes, low_bytes } => {
                     let bits = ((high_bytes as u64) << 32) & (low_bytes as u64);
                     let value = vm::Value::Double(bits as f64);
-                    Some(RuntimeConstantPoolEntry::PrimitiveLiteral(value))
+                    Some(RuntimeConstantPoolEntry::ResolvedLiteral(value))
                 },
 
                 ConstantPoolInfo::NameAndType { .. } => None,
@@ -97,7 +99,7 @@ impl RuntimeConstantPool {
 
                 ConstantPoolInfo::Unusable => None,
 
-                _ => panic!("unsupported ConstantPoolInfo"),
+                _ => None,
             };
             entries.push(entry);
         }
@@ -142,6 +144,20 @@ impl RuntimeConstantPool {
             Some(RuntimeConstantPoolEntry::StringValue(ref modified_utf8)) =>
                 modified_utf8.to_string(),
             _ => panic!("expected RuntimeConstantPoolInfo::StringValue"),
+        }
+    }
+
+    pub fn resolve_literal(&mut self, index: constant_pool_index, class_loader: &mut ClassLoader)
+            -> Result<Value, class_loader::Error> {
+        match self.entries[index as usize] {
+            Some(RuntimeConstantPoolEntry::ResolvedLiteral(ref value)) => Ok(value.clone()),
+            Some(RuntimeConstantPoolEntry::UnresolvedString(string_index)) => {
+                let string_sig = sig::Class::Scalar(String::from("java/lang/String"));
+                let string_symref = symref::Class { sig: string_sig };
+                let string_class = try!(class_loader.resolve_class(&string_symref));
+                panic!("now to instantiate a String literal; not sure what happens here")
+            },
+            _ => panic!("expected literal constant pool entry"),
         }
     }
 }

@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use model::class_file::access_flags::class_access_flags;
 
 use vm::{Class, Method, MethodCode, Value};
@@ -47,7 +49,7 @@ impl<'a> Frame<'a> {
 
     fn pop_as_locals(&mut self, count: usize) -> Vec<Option<Value>> {
         let mut result = vec![];
-        let start_index = self.operand_stack.len() - count - 1;
+        let start_index = self.operand_stack.len() - count;
         for value in self.operand_stack.split_at(start_index).1 {
             result.push(Some(value.clone()));
             match *value {
@@ -86,8 +88,9 @@ impl<'a> Frame<'a> {
 
         macro_rules! do_ldc {
             ($index: ident) => ({
+                // TODO: should use resolve_literal
                 match self.current_class.get_constant_pool()[$index] {
-                    Some(RuntimeConstantPoolEntry::PrimitiveLiteral(ref value)) =>
+                    Some(RuntimeConstantPoolEntry::ResolvedLiteral(ref value)) =>
                         self.operand_stack.push(value.clone()),
                     _ => panic!("illegal or unsupported constant pool load"),
                 }
@@ -167,6 +170,19 @@ impl<'a> Frame<'a> {
 
                 opcode::RETURN => return None,
 
+                opcode::GETSTATIC => {
+                    let index = self.read_next_short();
+                    if let Some(RuntimeConstantPoolEntry::FieldRef(ref symref)) =
+                            self.current_class.get_constant_pool()[index] {
+                        let mut resolved_class = class_loader.resolve_class(&symref.class).unwrap();
+                        let value = Rc::get_mut(&mut resolved_class).unwrap()
+                                       .resolve_and_get_field(symref, class_loader);
+                        self.operand_stack.push(value)
+                    } else {
+                        panic!("getstatic refers to non-field in constant pool");
+                    }
+                },
+
                 opcode::INVOKEVIRTUAL => {
                     let index = self.read_next_short();
                     if let Some(RuntimeConstantPoolEntry::MethodRef(ref symref)) =
@@ -227,6 +243,23 @@ impl<'a> Frame<'a> {
                         self.invoke(class_loader, actual_class.as_ref(), actual_method, args)
                     } else {
                         panic!("invokespecial refers to non-method in constant pool");
+                    }
+                },
+
+                opcode::INVOKESTATIC => {
+                    let index = self.read_next_short();
+                    if let Some(RuntimeConstantPoolEntry::MethodRef(ref symref)) =
+                            self.current_class.get_constant_pool()[index] {
+                        // TODO: this should throw Java exceptions instead of unwrapping
+                        let resolved_class = class_loader.resolve_class(&symref.class).unwrap();
+                        let resolved_method = resolved_class.resolve_method(symref);
+                        // TODO: check protected accesses
+                        // TODO: lots of other checks here too
+                        let num_args = symref.sig.params.len();
+                        let args = self.pop_as_locals(num_args);
+                        self.invoke(class_loader, resolved_class.as_ref(), resolved_method, args);
+                    } else {
+                        panic!("invokestatic refers to non-method in constant pool");
                     }
                 },
 
