@@ -349,10 +349,8 @@ pub struct Method {
     pub symref: symref::Method,
     /// The method's access flags.
     pub access_flags: u16,
-    /// The method's bytecode instructions.
-    pub code: Vec<u8>,
-    /// The method's exception table, used for catching `Throwable`s. Order is significant.
-    pub exception_table: Vec<ExceptionTableEntry>,
+    /// An optional MethodCode structure. Not present for abstract and native methods.
+    pub method_code: Option<MethodCode>,
 }
 
 impl Method {
@@ -363,13 +361,28 @@ impl Method {
                     return Method {
                         symref: symref,
                         access_flags: method_info.access_flags,
-                        code: code,
-                        exception_table: exception_table,
+                        method_code: Some(MethodCode {
+                            code: code,
+                            exception_table: exception_table,
+                        }),
                     }
                 },
                 _ => (),
             }
         }
-        panic!("no Code attribute in MethodInfo")
+
+        Method {
+            symref: symref,
+            access_flags: method_info.access_flags,
+            method_code: None,
+        }
     }
+}
+
+#[derive(Debug)]
+pub struct MethodCode {
+    /// The method's bytecode instructions.
+    pub code: Vec<u8>,
+    /// The method's exception table, used for catching `Throwable`s. Order is significant.
+    pub exception_table: Vec<ExceptionTableEntry>,
 }

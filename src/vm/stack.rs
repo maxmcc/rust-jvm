@@ -1,6 +1,6 @@
 use model::class_file::access_flags::class_access_flags;
 
-use vm::{Method, Value};
+use vm::{Class, Method, MethodCode, Value};
 use vm::class_loader::ClassLoader;
 use vm::constant_pool::{RuntimeConstantPool, RuntimeConstantPoolEntry};
 use vm::bytecode::opcode;
@@ -9,10 +9,10 @@ use vm::bytecode::opcode;
 /// return values for methods, and dispatch exceptions.
 #[derive(Debug)]
 pub struct Frame<'a> {
-    /// The method executing in this frame. This structure contains the running bytecode.
-    method: &'a Method,
-    /// A reference to the runtime constant pool of the current method's class.
-    runtime_constant_pool: &'a RuntimeConstantPool,
+    /// A reference to the class containing the currently executing method.
+    current_class: &'a Class,
+    /// Contains the bytecode currently executing in this frame, along with related structures.
+    method_code: &'a MethodCode,
     /// The current program counter.
     pc: u16,
     /// The local variables of the current method.
@@ -24,11 +24,11 @@ pub struct Frame<'a> {
 }
 
 impl<'a> Frame<'a> {
-    pub fn new(method: &'a Method, runtime_constant_pool: &'a RuntimeConstantPool,
+    pub fn new(current_class: &'a Class, method_code: &'a MethodCode,
                local_variables: Vec<Option<Value>>) -> Self {
         Frame {
-            method: method,
-            runtime_constant_pool: runtime_constant_pool,
+            current_class: current_class,
+            method_code: method_code,
             pc: 0,
             local_variables: local_variables,
             operand_stack: vec![],
@@ -36,7 +36,7 @@ impl<'a> Frame<'a> {
     }
 
     fn read_next_byte(&mut self) -> u8 {
-        let result = self.method.code[self.pc as usize];
+        let result = self.method_code.code[self.pc as usize];
         self.pc += 1;
         result
     }
@@ -58,6 +58,20 @@ impl<'a> Frame<'a> {
         result
     }
 
+    fn invoke(&mut self, class_loader: &mut ClassLoader, class: &Class, method: &Method,
+              args: Vec<Option<Value>>) {
+        match method.method_code {
+            None => (),
+            Some(ref method_code) => {
+                let frame = Frame::new(class, method_code, args);
+                match frame.run(class_loader) {
+                    None => (),
+                    Some(return_value) => self.operand_stack.push(return_value)
+                }
+            }
+        }
+    }
+
     pub fn run(mut self, class_loader: &mut ClassLoader) -> Option<Value> {
         macro_rules! with {
             ($read_next_action: ident, $k: ident) => ({
@@ -72,7 +86,7 @@ impl<'a> Frame<'a> {
 
         macro_rules! do_ldc {
             ($index: ident) => ({
-                match self.runtime_constant_pool[$index] {
+                match self.current_class.get_constant_pool()[$index] {
                     Some(RuntimeConstantPoolEntry::PrimitiveLiteral(ref value)) =>
                         self.operand_stack.push(value.clone()),
                     _ => panic!("illegal or unsupported constant pool load"),
@@ -156,7 +170,7 @@ impl<'a> Frame<'a> {
                 opcode::INVOKEVIRTUAL => {
                     let index = self.read_next_short();
                     if let Some(RuntimeConstantPoolEntry::MethodRef(ref symref)) =
-                            self.runtime_constant_pool[index] {
+                            self.current_class.get_constant_pool()[index] {
                         // TODO: this should throw Java exceptions instead of unwrapping
                         let resolved_class = class_loader.resolve_class(&symref.class).unwrap();
                         let resolved_method = resolved_class.resolve_method(symref);
@@ -177,12 +191,8 @@ impl<'a> Frame<'a> {
                         };
                         match object_class.dispatch_method(resolved_method) {
                             None => panic!("AbstractMethodError"),
-                            Some((actual_class, actual_method)) => {
-                                // TODO: check for abstract
-                                let frame = Frame::new(actual_method,
-                                                       actual_class.get_constant_pool(), args);
-                                frame.run(class_loader);
-                            },
+                            Some((actual_class, actual_method)) =>
+                                self.invoke(class_loader, actual_class, actual_method, args),
                         }
                     } else {
                         panic!("invokevirtual refers to non-method in constant pool");
@@ -192,7 +202,7 @@ impl<'a> Frame<'a> {
                 opcode::INVOKESPECIAL => {
                     let index = self.read_next_short();
                     if let Some(RuntimeConstantPoolEntry::MethodRef(ref symref)) =
-                            self.runtime_constant_pool[index] {
+                            self.current_class.get_constant_pool()[index] {
                         // TODO: this should throw Java exceptions instead of unwrapping
                         let resolved_class = class_loader.resolve_class(&symref.class).unwrap();
                         let resolved_method = resolved_class.resolve_method(symref);
@@ -202,23 +212,19 @@ impl<'a> Frame<'a> {
                         let args = self.pop_as_locals(num_args + 1);
 
                         // check the three conditions from the spec
-                        let current_class = class_loader.resolve_class(&self.method.symref.class)
-                                                        .unwrap();
                         let actual_method = {
                             if resolved_class.access_flags & class_access_flags::ACC_SUPER == 0
-                                    || !current_class.is_descendant(resolved_class.as_ref())
+                                    || !self.current_class.is_descendant(resolved_class.as_ref())
                                     || resolved_method.symref.sig.name == "<init>" {
                                 resolved_method
                             } else {
-                                current_class.superclass.as_ref().and_then(|superclass| {
+                                self.current_class.superclass.as_ref().and_then(|superclass| {
                                     superclass.find_method(&symref.sig)
                                 }).expect("AbstractMethodError")
                             }
                         };
                         let actual_class = class_loader.resolve_class(&actual_method.symref.class).unwrap();
-                        let frame = Frame::new(actual_method, actual_class.get_constant_pool(),
-                                               args);
-                        frame.run(class_loader);
+                        self.invoke(class_loader, actual_class.as_ref(), actual_method, args)
                     } else {
                         panic!("invokespecial refers to non-method in constant pool");
                     }
