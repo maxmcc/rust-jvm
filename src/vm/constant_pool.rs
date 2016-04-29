@@ -1,13 +1,11 @@
-use std::rc::Rc;
 use std::ops::Index;
 
 pub use model::class_file::constant_pool::constant_pool_index;
 use model::class_file::constant_pool::{ConstantPool, ConstantPoolInfo};
 use vm;
-use vm::class_loader;
-use vm::class_loader::ClassLoader;
 use util::one_indexed_vec::OneIndexedVec;
 
+/// Descriptors for things in the runtime constant pool.
 pub mod handle {
     use vm::Value;
 
@@ -157,7 +155,7 @@ pub mod handle {
     }
 }
 
-/// A reference to an unresolved structure in the runtime constant pool.
+/// References to unlinked structures from the runtime constant pool.
 pub mod symref {
     use vm::handle;
 

@@ -1,3 +1,5 @@
+//! Structures for linked classes.
+
 pub mod bytecode;
 pub mod constant_pool;
 pub mod stack;
@@ -12,11 +14,11 @@ use util::one_indexed_vec::OneIndexedVec;
 
 pub use vm::constant_pool::{handle, symref, RuntimeConstantPool};
 pub use vm::heap::Object;
+pub use vm::class_loader::ClassLoader;
 use model::class_file::{ClassFile, MethodInfo};
 use model::class_file::access_flags;
 use model::class_file::attribute::{AttributeInfo, ExceptionTableEntry};
 use vm::constant_pool::handle::Type;
-use vm::stack::Frame;
 
 /// A value in the Java virtual machine.
 #[derive(Debug, Clone)]
@@ -36,13 +38,22 @@ pub enum Value {
     NullReference,
 }
 
+/// A JVM representation of a class that has been loaded.
 #[derive(Debug)]
 pub struct Class {
+    /// A symbolic reference to the class, comprised of its name (if a scalar type) or element type
+    /// (if an array class).
     symref: symref::Class,
+    /// The superclass extended by the class. If the class is `java/lang/Object`, this is `None`.
     superclass: Option<Rc<Class>>,
+    /// The runtime constant pool of the current class, created from the constant pool defined in
+    /// the `.class` file that has been loaded.
     constant_pool: RuntimeConstantPool,
+    /// The `static` fields of the class, mapped to their values.
     class_fields: HashMap<handle::Field, Value>,
+    /// The names of the non-`static` fields of an instance of this class.
     instance_fields: HashSet<handle::Field>,
+    /// The methods of the class, mapped to their method handles.
     methods: HashMap<handle::Method, Method>,
 }
 
@@ -82,6 +93,7 @@ impl Class {
         }
     }
 
+    /// Create a new array class for a given element type.
     pub fn new_array(object_class: Rc<Class>, component_type: handle::Type) -> Self {
         let length_field = handle::Field {
             name: String::from("length"),
@@ -141,9 +153,13 @@ impl Class {
 
 #[derive(Debug)]
 pub struct Method {
+    /// The method's signature, comprised of its name and argument and return types.
     pub symref: symref::Method,
+    /// The method's access flags.
     pub access_flags: u16,
+    /// The method's bytecode instructions.
     pub code: Vec<u8>,
+    /// The method's exception table, used for catching `Throwable`s. Order is significant.
     pub exception_table: Vec<ExceptionTableEntry>,
 }
 
@@ -159,7 +175,6 @@ impl Method {
                         exception_table: exception_table,
                     }
                 },
-
                 _ => (),
             }
         }

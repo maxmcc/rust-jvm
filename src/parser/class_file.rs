@@ -997,10 +997,8 @@ fn fix_constant_pool_vec_0(mut constant_pool: Vec<ConstantPoolInfo>) -> Vec<Cons
 
 }
 
-/// Parses a Java class file.
-///
 /// `parser::class_file::parse_class_file(&[u8]) -> ParseResult<model::class_file::ClassFile>)`
-n!(pub parse_class_file<Input, ClassFile, Error>, p_cut!(
+n!(class_file_parser<Input, ClassFile, Error>, p_cut!(
     Error::ClassFile,
     chain!(c!(magic) ~
            minor_version: p!(be_u16) ~
@@ -1041,6 +1039,14 @@ n!(pub parse_class_file<Input, ClassFile, Error>, p_cut!(
                attributes: attributes,
            })));
 
+/// Parses a Java class file.
+pub fn parse_class_file(input: Input) -> nom::IResult<Input, ClassFile, Error> {
+    match class_file_parser(input) {
+        Ok(r) => r,
+        Err(e) => nom::IResult::Error(e),
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -1050,7 +1056,7 @@ mod test {
     #[test]
     fn test_hello_world() {
         let data = include_bytes!("../../data/HelloWorld.class");
-        parse_class_file(data).unwrap();
+        assert!(parse_class_file(data).is_done());
     }
 
     macro_rules! long {
