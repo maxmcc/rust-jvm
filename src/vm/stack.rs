@@ -101,45 +101,6 @@ impl<'a> Frame<'a> {
                 opcode::LDC => with!(read_next_byte, do_ldc),
                 opcode::LDC_W | opcode::LDC2_W => with!(read_next_short, do_ldc),
 
-                opcode::RETURN => return None,
-
-                opcode::INVOKEVIRTUAL => {
-                    let index = self.read_next_short();
-                    if let Some(RuntimeConstantPoolEntry::MethodRef(ref symref)) =
-                            self.runtime_constant_pool[index] {
-                        // TODO: this should throw Java exceptions instead of unwrapping
-                        let resolved_class = class_loader.resolve_class(&symref.class).unwrap();
-                        let resolved_method = resolved_class.resolve_method(symref);
-                        // TODO: check for <clinit> and <init>
-                        // TODO: check protected accesses
-                        let num_args = symref.handle.params.len();
-                        let args = self.pop_as_locals(num_args + 1);
-                        let object_class = {
-                            let object_value = &args[0];
-                            if let Some(Value::NullReference) = *object_value {
-                                panic!("NullPointerException")
-                            } else if let Some(Value::Reference(ref object_ref)) = *object_value {
-                                let object = object_ref.as_ref().borrow();
-                                object.get_class().clone()
-                            } else {
-                                panic!("invokevirtual on a primitive type");
-                            }
-                        };
-                        match object_class.dispatch_method(resolved_method) {
-                            None => panic!("AbstractMethodError"),
-                            Some((actual_class, actual_method)) => {
-                                // TODO: check for abstract
-                                let frame = Frame::new(actual_method,
-                                                       actual_class.get_constant_pool(), args);
-                                frame.run(class_loader);
-                            },
-                        }
-                    } else {
-                        panic!("invokevirtual refers to non-method in constant pool");
-                    }
-                },
-
-
                 opcode::POP => {
                     self.operand_stack.pop();
                 },
@@ -185,6 +146,44 @@ impl<'a> Frame<'a> {
                             self.operand_stack.extend_from_slice(
                                 &[value2.clone(), value1.clone(), value2, value1]);
                         },
+                    }
+                },
+
+                opcode::RETURN => return None,
+
+                opcode::INVOKEVIRTUAL => {
+                    let index = self.read_next_short();
+                    if let Some(RuntimeConstantPoolEntry::MethodRef(ref symref)) =
+                            self.runtime_constant_pool[index] {
+                        // TODO: this should throw Java exceptions instead of unwrapping
+                        let resolved_class = class_loader.resolve_class(&symref.class).unwrap();
+                        let resolved_method = resolved_class.resolve_method(symref);
+                        // TODO: check for <clinit> and <init>
+                        // TODO: check protected accesses
+                        let num_args = symref.handle.params.len();
+                        let args = self.pop_as_locals(num_args + 1);
+                        let object_class = {
+                            let object_value = &args[0];
+                            if let Some(Value::NullReference) = *object_value {
+                                panic!("NullPointerException")
+                            } else if let Some(Value::Reference(ref object_ref)) = *object_value {
+                                let object = object_ref.as_ref().borrow();
+                                object.get_class().clone()
+                            } else {
+                                panic!("invokevirtual on a primitive type");
+                            }
+                        };
+                        match object_class.dispatch_method(resolved_method) {
+                            None => panic!("AbstractMethodError"),
+                            Some((actual_class, actual_method)) => {
+                                // TODO: check for abstract
+                                let frame = Frame::new(actual_method,
+                                                       actual_class.get_constant_pool(), args);
+                                frame.run(class_loader);
+                            },
+                        }
+                    } else {
+                        panic!("invokevirtual refers to non-method in constant pool");
                     }
                 },
 
