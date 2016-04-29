@@ -109,9 +109,20 @@ impl ClassLoader {
         self.load_class(&symref.sig)
     }
 
+    /// Derives the super class (if it exists) of the specified class.
+    fn derive_super_class(&mut self, name: &str, rcp: &RuntimeConstantPool,
+                          class_file: &ClassFile) -> Result<Option<Rc<vm::Class>>, Error> {
+        if class_file.super_class == 0 {
+            Ok(None)
+        } else {
+            let super_symref = try!(Self::get_class_ref(rcp, class_file.super_class));
+            self.resolve_class(&super_symref).map(Some)
+        }
+    }
+
     /// Derives the specified class and its interfaces, but not its superclass.
     fn derive_class(&mut self, original_name: &str, sig: &sig::Class, class_bytes: &[u8])
-            -> Result<(ClassFile, RuntimeConstantPool), Error> {
+                    -> Result<Rc<vm::Class>, Error> {
         // TODO we discard the parse errors, but it's so hard to fix that...
         let parsed_class = try!(
             match class_file::parse_class_file(&class_bytes) {
@@ -121,7 +132,7 @@ impl ClassLoader {
             }
         );
         try!(
-            if parsed_class.major_version != 51 || parsed_class.minor_version != 0 {
+            if parsed_class.major_version != 52 || parsed_class.minor_version != 0 {
                 Err(Error::UnsupportedVersion {
                     major: parsed_class.major_version,
                     minor: parsed_class.minor_version,
@@ -131,36 +142,21 @@ impl ClassLoader {
             }
         );
         let rcp = RuntimeConstantPool::new(&parsed_class.constant_pool);
-        try!({
-            let this_entry = &rcp[parsed_class.this_class];
-            if let Some(RuntimeConstantPoolEntry::ClassRef(ref this_symref)) = *this_entry {
-                if *sig == this_symref.sig {
-                    let super_symref = try!(Self::get_class_ref(&rcp, parsed_class.super_class));
-                    let _ = try!(self.resolve_class(&super_symref));
-                    // TODO: Check that the entry is actually an interface
-                    for interface in &parsed_class.interfaces {
-                        let iface_symref = try!(Self::get_class_ref(&rcp, *interface));
-                        try!(self.resolve_class(&iface_symref));
-                    }
-                    Ok(())
-                } else {
-                    Err(Error::NoClassDefFound { name: String::from(original_name) })
-                }
-            } else {
-                Err(Error::ClassFormat)
+        let sig_matches = {
+            let this_symref = try!(Self::get_class_ref(&rcp, parsed_class.this_class));
+            *sig == this_symref.sig
+        };
+        if sig_matches {
+            let super_class = try!(self.derive_super_class(original_name, &rcp, &parsed_class));
+            // TODO: Check that the entry is actually an interface
+            for interface in &parsed_class.interfaces {
+                let iface_symref = try!(Self::get_class_ref(&rcp, *interface));
+                try!(self.resolve_class(&iface_symref));
             }
-        });
-        Ok((parsed_class, rcp))
-    }
-
-    /// Derives the super class (if it exists) of the specified class.
-    fn derive_super_class(&mut self, name: &str, sig: &sig::Class, rcp: &RuntimeConstantPool,
-                          class_file: &ClassFile) -> Result<Option<Rc<vm::Class>>, Error> {
-        if class_file.super_class == 0 {
-            Ok(None)
+            Ok(Rc::new(vm::Class::new(symref::Class { sig: sig.clone() }, super_class, rcp,
+                                      parsed_class)))
         } else {
-            let super_symref = try!(Self::get_class_ref(rcp, class_file.super_class));
-            self.resolve_class(&super_symref).map(Some)
+            Err(Error::NoClassDefFound { name: String::from(original_name) })
         }
     }
 
@@ -176,10 +172,7 @@ impl ClassLoader {
     /// class files we attempt to load are valid.
     fn load_class_bytes(&mut self, name: &str, sig: &sig::Class, class_bytes: &[u8])
                             -> Result<Rc<vm::Class>, Error> {
-        let (class_file, rcp) = try!(self.derive_class(name, sig, class_bytes));
-        let super_class = try!(self.derive_super_class(name, sig, &rcp, &class_file));
-        Ok(Rc::new(vm::Class::new(symref::Class { sig: sig.clone() }, super_class, rcp,
-                                  class_file)))
+        self.derive_class(name, sig, class_bytes)
     }
 
     /// Attempts to create, load, and prepare the specified class using the bootstrap class loader
