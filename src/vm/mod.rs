@@ -1,4 +1,4 @@
-//! The Java virtual
+//! Structures for linked classes.
 
 pub mod bytecode;
 pub mod constant_pool;
@@ -14,6 +14,7 @@ use util::one_indexed_vec::OneIndexedVec;
 
 pub use vm::constant_pool::{handle, symref, RuntimeConstantPool};
 pub use vm::heap::Object;
+pub use vm::class_loader::ClassLoader;
 use model::class_file::{ClassFile, MethodInfo};
 use model::class_file::access_flags;
 use model::class_file::attribute::{AttributeInfo, ExceptionTableEntry};
