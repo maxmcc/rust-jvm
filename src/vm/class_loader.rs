@@ -10,9 +10,8 @@ use nom;
 
 use model::class_file::ClassFile;
 use parser::class_file;
-use vm;
-use vm::constant_pool::{symref, RuntimeConstantPool, RuntimeConstantPoolEntry};
-use vm::handle;
+use vm::{self, handle, symref};
+use vm::constant_pool::{RuntimeConstantPool, RuntimeConstantPoolEntry};
 
 #[derive(Debug)]
 pub enum Error {

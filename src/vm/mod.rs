@@ -12,13 +12,35 @@ use std::rc::Rc;
 
 use util::one_indexed_vec::OneIndexedVec;
 
-pub use vm::constant_pool::{handle, symref, RuntimeConstantPool};
+pub use vm::constant_pool::{handle, RuntimeConstantPool};
 pub use vm::heap::Object;
 pub use vm::class_loader::ClassLoader;
 use model::class_file::{ClassFile, MethodInfo};
 use model::class_file::access_flags;
 use model::class_file::attribute::{AttributeInfo, ExceptionTableEntry};
 use vm::constant_pool::handle::Type;
+
+/// References to unlinked structures from the runtime constant pool.
+pub mod symref {
+    use vm::handle;
+
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+    pub struct Class {
+        pub handle: handle::Class,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+    pub struct Field {
+        pub class: Class,
+        pub handle: handle::Field,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+    pub struct Method {
+        pub class: Class,
+        pub handle: handle::Method,
+    }
+}
 
 /// A value in the Java virtual machine.
 #[derive(Debug, Clone)]

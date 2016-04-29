@@ -2,7 +2,7 @@ use std::ops::Index;
 
 pub use model::class_file::constant_pool::constant_pool_index;
 use model::class_file::constant_pool::{ConstantPool, ConstantPoolInfo};
-use vm;
+use vm::{self, symref};
 use util::one_indexed_vec::OneIndexedVec;
 
 /// Descriptors for things in the runtime constant pool.
@@ -152,28 +152,6 @@ pub mod handle {
                 return_ty: return_ty
             }
         }
-    }
-}
-
-/// References to unlinked structures from the runtime constant pool.
-pub mod symref {
-    use vm::handle;
-
-    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-    pub struct Class {
-        pub handle: handle::Class,
-    }
-
-    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-    pub struct Field {
-        pub class: Class,
-        pub handle: handle::Field,
-    }
-
-    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-    pub struct Method {
-        pub class: Class,
-        pub handle: handle::Method,
     }
 }
 
