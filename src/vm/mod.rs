@@ -15,7 +15,7 @@ use util::one_indexed_vec::OneIndexedVec;
 pub use vm::constant_pool::RuntimeConstantPool;
 pub use vm::heap::Object;
 pub use vm::class_loader::ClassLoader;
-use model::class_file::{ClassFile, MethodInfo};
+use model::class_file::{constant_pool_index, ClassFile, MethodInfo};
 use model::class_file::access_flags;
 use model::class_file::attribute::{AttributeInfo, ExceptionTableEntry};
 
@@ -223,29 +223,38 @@ pub struct Class {
     /// The runtime constant pool of the current class, created from the constant pool defined in
     /// the `.class` file that has been loaded.
     constant_pool: RuntimeConstantPool,
-    /// The `static` fields of the class, mapped to their values.
-    class_fields: HashMap<sig::Field, Value>,
-    /// The names of the non-`static` fields of an instance of this class.
-    instance_fields: HashSet<sig::Field>,
-    /// The methods of the class, mapped to their method sigs.
+    /// The fields of this class, including both `static` and non-`static` fields. We don't
+    /// separate them because it makes throwing the correct runtime `Error` easier.
+    fields: HashSet<sig::Field>,
+    /// The constants which populate the `static final` fields of this class. We don't immediately
+    /// put these values into `class_fields` because they can include `String` literals, and we may
+    /// not have loaded the `String` class yet. (This is also consistent with the spec, which
+    /// states that these constants are set at class initialization time.)
+    field_constants: HashMap<sig::Field, constant_pool_index>,
+    /// The methods of the class, mapped to their method structures.
     methods: HashMap<sig::Method, Method>,
+    /// Once this class has been initialized, this map contains the current value for each `static`
+    /// field. Prior to initialization, the map is empty.
+    field_values: HashMap<sig::Field, Value>,
 }
 
 impl Class {
     pub fn new(symref: symref::Class, superclass: Option<Rc<Class>>,
                constant_pool: RuntimeConstantPool, class_file: ClassFile) -> Self {
-        let mut class_fields = HashMap::new();
-        let mut instance_fields = HashSet::new();
+        let mut fields = HashSet::new();
+        let mut field_constants = HashMap::new();
         for field_info in class_file.fields {
             let name = constant_pool.lookup_raw_string(field_info.name_index);
             let ty = sig::Type::new(&constant_pool.lookup_raw_string(field_info.descriptor_index));
             let sig = sig::Field { name: name, ty: ty };
             if field_info.access_flags & access_flags::field_access_flags::ACC_STATIC != 0 {
-                let default_value = sig.ty.default_value();
-                class_fields.insert(sig, default_value);
-            } else {
-                instance_fields.insert(sig);
+                for attribute in field_info.attributes {
+                    if let AttributeInfo::ConstantValue { constant_value_index } = attribute {
+                        field_constants.insert(sig.clone(), constant_value_index);
+                    }
+                }
             }
+            fields.insert(sig);
         }
 
         let mut methods = HashMap::new();
@@ -262,9 +271,10 @@ impl Class {
             access_flags: class_file.access_flags,
             superclass: superclass,
             constant_pool: constant_pool,
-            class_fields: class_fields,
-            instance_fields: instance_fields,
+            fields: fields,
+            field_constants: field_constants,
             methods: methods,
+            field_values: HashMap::new(),
         }
     }
 
@@ -277,16 +287,17 @@ impl Class {
             ty: sig::Type::Int,
         };
         let empty_constant_pool = OneIndexedVec::from(vec![]);
-        let mut instance_fields = HashSet::new();
-        instance_fields.insert(length_field);
+        let mut fields = HashSet::new();
+        fields.insert(length_field);
         Class {
             symref: symref::Class { sig: sig::Class::Array(Box::new(component_type)) },
             access_flags: access_flags,
             superclass: Some(object_class.clone()),
             constant_pool: RuntimeConstantPool::new(&empty_constant_pool),
-            class_fields: HashMap::new(),
-            instance_fields: instance_fields,
+            fields: fields,
+            field_constants: HashMap::new(),
             methods: HashMap::new(),
+            field_values: HashMap::new(),
         }
     }
 

@@ -2,7 +2,7 @@ use model::class_file::access_flags::class_access_flags;
 
 use vm::{Class, Method, MethodCode, Value};
 use vm::class_loader::ClassLoader;
-use vm::constant_pool::{RuntimeConstantPool, RuntimeConstantPoolEntry};
+use vm::constant_pool::{RuntimeConstantPoolEntry};
 use vm::bytecode::opcode;
 
 /// A frame is used to store data and partial results, as well as to perform dynamic linking,

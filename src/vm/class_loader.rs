@@ -110,8 +110,8 @@ impl ClassLoader {
     }
 
     /// Derives the super class (if it exists) of the specified class.
-    fn derive_super_class(&mut self, name: &str, rcp: &RuntimeConstantPool,
-                          class_file: &ClassFile) -> Result<Option<Rc<vm::Class>>, Error> {
+    fn derive_super_class(&mut self, rcp: &RuntimeConstantPool, class_file: &ClassFile)
+            -> Result<Option<Rc<vm::Class>>, Error> {
         if class_file.super_class == 0 {
             Ok(None)
         } else {
@@ -147,7 +147,7 @@ impl ClassLoader {
             *sig == this_symref.sig
         };
         if sig_matches {
-            let super_class = try!(self.derive_super_class(original_name, &rcp, &parsed_class));
+            let super_class = try!(self.derive_super_class(&rcp, &parsed_class));
             // TODO: Check that the entry is actually an interface
             for interface in &parsed_class.interfaces {
                 let iface_symref = try!(Self::get_class_ref(&rcp, *interface));
