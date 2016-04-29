@@ -1,4 +1,4 @@
-mod opcode {
+pub mod opcode {
     pub const NOP: u8 = 0x00;
     pub const ACONST_NULL: u8 = 0x01;
     pub const ICONST_M1: u8 = 0x02;
