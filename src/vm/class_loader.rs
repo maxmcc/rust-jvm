@@ -11,7 +11,7 @@ use nom;
 use model::class_file::ClassFile;
 use parser::class_file;
 use vm;
-use vm::constant_pool::{RuntimeConstantPool, RuntimeConstantPoolEntry};
+use vm::constant_pool::{symref, RuntimeConstantPool, RuntimeConstantPoolEntry};
 use vm::handle;
 
 #[derive(Debug)]
@@ -143,11 +143,15 @@ impl ClassLoader {
         })
     }
 
-    fn resolve_class_symref(&mut self, rcp: &RuntimeConstantPool, index: u16)
+    pub fn resolve_class(&mut self, symref: &symref::Class) -> Result<Rc<vm::Class>, Error> {
+        // TODO check access modifiers
+        self.load_class(&symref.handle)
+    }
+
+    fn force_resolve_class(&mut self, rcp: &RuntimeConstantPool, index: u16)
             -> Result<Rc<vm::Class>, Error> {
         if let Some(RuntimeConstantPoolEntry::ClassRef(ref class_symref)) = rcp[index] {
-            // TODO check access modifiers
-            self.load_class(&class_symref.handle)
+            self.resolve_class(class_symref)
         } else {
             Err(Error::ClassFormat)
         }
@@ -179,9 +183,9 @@ impl ClassLoader {
             let this_entry = &rcp[parsed_class.this_class];
             if let Some(RuntimeConstantPoolEntry::ClassRef(ref this_symref)) = *this_entry {
                 if *handle == this_symref.handle {
-                    let _ = try!(self.resolve_class_symref(&rcp, parsed_class.super_class));
+                    let _ = try!(self.force_resolve_class(&rcp, parsed_class.super_class));
                     for interface in &parsed_class.interfaces {
-                        try!(self.resolve_class_symref(&rcp, *interface));
+                        try!(self.force_resolve_class(&rcp, *interface));
                     }
                     Ok(())
                 } else {

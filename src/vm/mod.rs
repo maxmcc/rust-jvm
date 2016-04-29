@@ -100,10 +100,41 @@ impl Class {
         }
     }
 
-    pub fn create_frame<'a>(&'a self, method_handle: &handle::Method,
-                            local_variables: Vec<Option<Value>>) -> Option<Frame<'a>> {
-        self.methods.get(method_handle).map(move |ref method| {
-            Frame::new(method, &self.constant_pool, local_variables)
+    pub fn get_constant_pool(&self) -> &RuntimeConstantPool {
+        &self.constant_pool
+    }
+
+    // TODO access control
+    pub fn resolve_method(&self, method_symref: &symref::Method) -> &Method {
+        // TODO check if this is an interface
+        self.find_method(&method_symref.handle).expect("NoSuchMethodError")
+    }
+
+    fn find_method(&self, method_handle: &handle::Method) -> Option<&Method> {
+        self.methods.get(method_handle).or_else(|| {
+            self.superclass.as_ref().and_then(|superclass| superclass.find_method(method_handle))
+        })
+    }
+
+    pub fn dispatch_method(&self, resolved_method: &Method) -> Option<(&Class, &Method)> {
+        self.methods.get(&resolved_method.symref.handle).and_then(|our_method| {
+            if our_method.access_flags & access_flags::method_access_flags::ACC_PRIVATE != 0
+                    || our_method.access_flags & access_flags::method_access_flags::ACC_STATIC != 0 {
+                None
+            } else if resolved_method.access_flags & access_flags::method_access_flags::ACC_PUBLIC == 0
+                    && resolved_method.access_flags & access_flags::method_access_flags::ACC_PROTECTED == 0
+                    && resolved_method.access_flags & access_flags::method_access_flags::ACC_PRIVATE == 0 {
+                // the resolved method is declared as package-private
+                if self.symref.handle.get_package() == resolved_method.symref.class.handle.get_package() {
+                    Some((self, our_method))
+                } else {
+                    None
+                }
+            } else {
+                Some((self, our_method))
+            }
+        }).or_else({||
+            self.superclass.as_ref().and_then(|superclass| superclass.dispatch_method(resolved_method))
         })
     }
 }
@@ -111,6 +142,7 @@ impl Class {
 #[derive(Debug)]
 pub struct Method {
     pub symref: symref::Method,
+    pub access_flags: u16,
     pub code: Vec<u8>,
     pub exception_table: Vec<ExceptionTableEntry>,
 }
@@ -122,6 +154,7 @@ impl Method {
                 AttributeInfo::Code { code, exception_table, .. } => {
                     return Method {
                         symref: symref,
+                        access_flags: method_info.access_flags,
                         code: code,
                         exception_table: exception_table,
                     }

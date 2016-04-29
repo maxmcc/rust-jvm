@@ -9,3 +9,11 @@ pub enum Object {
     Array { class: Rc<Class>, array: Vec<Value> },
 }
 
+impl Object {
+    pub fn get_class(&self) -> Rc<Class> {
+        match *self {
+            Object::Scalar { ref class, .. } => class.clone(),
+            Object::Array { ref class, .. } => class.clone(),
+        }
+    }
+}

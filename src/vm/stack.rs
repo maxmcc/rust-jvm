@@ -1,4 +1,5 @@
 use vm::{Method, Value};
+use vm::class_loader::ClassLoader;
 use vm::constant_pool::{constant_pool_index, RuntimeConstantPool, RuntimeConstantPoolEntry};
 
 /// A frame is used to store data and partial results, as well as to perform dynamic linking,
@@ -41,7 +42,20 @@ impl<'a> Frame<'a> {
         ((self.read_next_byte() as u16) << 8) | (self.read_next_byte() as u16)
     }
 
-    pub fn run(mut self) -> Option<Value> {
+    fn pop_as_locals(&mut self, count: usize) -> Vec<Option<Value>> {
+        let mut result = vec![];
+        let start_index = self.operand_stack.len() - count - 1;
+        for value in self.operand_stack.split_at(start_index).1 {
+            result.push(Some(value.clone()));
+            match *value {
+                Value::Long(_) | Value::Double(_) => result.push(None),
+                _ => (),
+            }
+        }
+        result
+    }
+
+    pub fn run(mut self, class_loader: &mut ClassLoader) -> Option<Value> {
         macro_rules! with {
             ($read_next_action: ident, $k: ident) => ({
                 let value = self.$read_next_action() as u16;
@@ -85,6 +99,44 @@ impl<'a> Frame<'a> {
                 opcode::SIPUSH => with!(read_next_short, do_ipush),
                 opcode::LDC => with!(read_next_byte, do_ldc),
                 opcode::LDC_W | opcode::LDC2_W => with!(read_next_short, do_ldc),
+
+                opcode::RETURN => return None,
+
+                opcode::INVOKEVIRTUAL => {
+                    let index = self.read_next_short();
+                    if let Some(RuntimeConstantPoolEntry::MethodRef(ref symref)) =
+                            self.runtime_constant_pool[index] {
+                        // TODO: this should throw Java exceptions instead of unwrapping
+                        let resolved_class = class_loader.resolve_class(&symref.class).unwrap();
+                        let resolved_method = resolved_class.resolve_method(symref);
+                        // TODO: check for <clinit> and <init>
+                        // TODO: check protected accesses
+                        let num_args = symref.handle.params.len();
+                        let args = self.pop_as_locals(num_args + 1);
+                        let object_class = {
+                            let object_value = &args[0];
+                            if let Some(Value::NullReference) = *object_value {
+                                panic!("NullPointerException")
+                            } else if let Some(Value::Reference(ref object_ref)) = *object_value {
+                                let object = object_ref.as_ref().borrow();
+                                object.get_class().clone()
+                            } else {
+                                panic!("invokevirtual on a primitive type");
+                            }
+                        };
+                        match object_class.dispatch_method(resolved_method) {
+                            None => panic!("AbstractMethodError"),
+                            Some((actual_class, actual_method)) => {
+                                // TODO: check for abstract
+                                let frame = Frame::new(actual_method,
+                                                       actual_class.get_constant_pool(), args);
+                                frame.run(class_loader);
+                            },
+                        }
+                    } else {
+                        panic!("invokevirtual refers to non-method in constant pool");
+                    }
+                },
 
                 _ => panic!("undefined or reserved opcode"),
             }

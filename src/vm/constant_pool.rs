@@ -1,8 +1,11 @@
+use std::rc::Rc;
 use std::ops::Index;
 
 pub use model::class_file::constant_pool::constant_pool_index;
 use model::class_file::constant_pool::{ConstantPool, ConstantPoolInfo};
 use vm;
+use vm::class_loader;
+use vm::class_loader::ClassLoader;
 use util::one_indexed_vec::OneIndexedVec;
 
 pub mod handle {
@@ -99,6 +102,18 @@ pub mod handle {
                 Class::Array(Box::new(component_type))
             } else {
                 Class::Scalar(String::from(name))
+            }
+        }
+
+        pub fn get_package(&self) -> Option<String> {
+            match *self {
+                Class::Scalar(ref name) => {
+                    match name.rfind('/') {
+                        None => Some(String::from("")),
+                        Some(index) => Some(String::from(name.split_at(index).0)),
+                    }
+                },
+                Class::Array(_) => None,
             }
         }
     }
