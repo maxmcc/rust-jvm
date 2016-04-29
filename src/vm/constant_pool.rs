@@ -254,7 +254,7 @@ impl RuntimeConstantPool {
                     Some(RuntimeConstantPoolEntry::StringValue(modified_utf8))
                 },
 
-                ConstantPoolInfo::Unusable { .. } => None,
+                ConstantPoolInfo::Unusable => None,
 
                 _ => panic!("unsupported ConstantPoolInfo"),
             };
