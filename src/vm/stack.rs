@@ -44,14 +44,14 @@ impl<'a> Frame<'a> {
     pub fn run(mut self) -> Option<Value> {
         macro_rules! with_index {
             ($read_next_action: ident, $with_i: ident) => ({
-                let i = self.$read_next_action();
-                $with_i!()(i as constant_pool_index);
+                let i = self.$read_next_action() as constant_pool_index;
+                $with_i!(i);
             })
         }
 
         macro_rules! ldc_action {
-            () => ({
-                |index| match self.runtime_constant_pool[index] {
+            ($index: ident) => ({
+                match self.runtime_constant_pool[$index] {
                     Some(RuntimeConstantPoolEntry::PrimitiveLiteral(ref value)) =>
                         self.operand_stack.push(value.clone()),
                     _ => panic!("illegal or unsupported constant pool load"),
