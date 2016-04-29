@@ -406,9 +406,22 @@ impl Class {
         // TODO: also not checking for static
         let value_opt = self.field_values.get(&symref.sig).map(|v| v.clone());
         value_opt.unwrap_or_else(move || {
-            let mut superclass: Rc<Class> = self.superclass.as_ref().expect("NoSuchFieldError").clone();
+            let mut superclass = self.superclass.as_ref().expect("NoSuchFieldError").clone();
             Rc::get_mut(&mut superclass).unwrap().resolve_and_get_field(symref, class_loader)
         })
+    }
+
+    pub fn resolve_and_put_field(&mut self, symref: &symref::Field, new_value: Value,
+                                 class_loader: &mut ClassLoader) {
+        self.initialize(class_loader);
+        // TODO we're ignoring superinterfaces and not checking for static
+        if self.field_values.contains_key(&symref.sig) {
+            self.field_values.insert(symref.sig.clone(), new_value);
+        } else {
+            let mut superclass = self.superclass.as_ref().expect("NoSuchFieldError").clone();
+            Rc::get_mut(&mut superclass).unwrap()
+                .resolve_and_put_field(symref, new_value, class_loader);
+        }
     }
 }
 

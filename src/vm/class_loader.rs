@@ -153,8 +153,11 @@ impl ClassLoader {
                 let iface_symref = try!(Self::get_class_ref(&rcp, *interface));
                 try!(self.resolve_class(&iface_symref));
             }
-            Ok(Rc::new(vm::Class::new(symref::Class { sig: sig.clone() }, super_class, rcp,
-                                      parsed_class)))
+            let symref = symref::Class { sig: sig.clone() };
+            let class = vm::Class::new(symref, super_class, rcp, parsed_class);
+            let rc = Rc::new(class);
+            self.classes.insert(sig.clone(), rc.clone());
+            Ok(rc)
         } else {
             Err(Error::NoClassDefFound { name: String::from(original_name) })
         }
