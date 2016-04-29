@@ -142,8 +142,11 @@ impl ClassLoader {
             }
         );
         let rcp = RuntimeConstantPool::new(&parsed_class.constant_pool);
-        let this_symref = try!(Self::get_class_ref(&rcp, parsed_class.this_class));
-        if *sig == this_symref.sig {
+        let sig_matches = {
+            let this_symref = try!(Self::get_class_ref(&rcp, parsed_class.this_class));
+            *sig == this_symref.sig
+        };
+        if sig_matches {
             let super_class = try!(self.derive_super_class(original_name, &rcp, &parsed_class));
             // TODO: Check that the entry is actually an interface
             for interface in &parsed_class.interfaces {
