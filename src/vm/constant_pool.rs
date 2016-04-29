@@ -1,6 +1,7 @@
 use std::ops::Index;
 
-use model::class_file::constant_pool::{constant_pool_index, ConstantPool, ConstantPoolInfo};
+pub use model::class_file::constant_pool::constant_pool_index;
+use model::class_file::constant_pool::{ConstantPool, ConstantPoolInfo};
 use vm;
 use util::one_indexed_vec::OneIndexedVec;
 
