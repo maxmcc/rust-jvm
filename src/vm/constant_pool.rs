@@ -147,7 +147,7 @@ impl RuntimeConstantPool {
         }
     }
 
-    pub fn resolve_literal(&mut self, index: constant_pool_index, class_loader: &mut ClassLoader)
+    pub fn resolve_literal(&self, index: constant_pool_index, class_loader: &mut ClassLoader)
             -> Result<Value, class_loader::Error> {
         match self.entries[index as usize] {
             Some(RuntimeConstantPoolEntry::ResolvedLiteral(ref value)) => Ok(value.clone()),

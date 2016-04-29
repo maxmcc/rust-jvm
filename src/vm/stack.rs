@@ -89,11 +89,9 @@ impl<'a> Frame<'a> {
         macro_rules! do_ldc {
             ($index: ident) => ({
                 // TODO: should use resolve_literal
-                match self.current_class.get_constant_pool()[$index] {
-                    Some(RuntimeConstantPoolEntry::ResolvedLiteral(ref value)) =>
-                        self.operand_stack.push(value.clone()),
-                    _ => panic!("illegal or unsupported constant pool load"),
-                }
+                let value = self.current_class.get_constant_pool()
+                                .resolve_literal($index, class_loader).unwrap();
+                self.operand_stack.push(value);
             });
         }
 
