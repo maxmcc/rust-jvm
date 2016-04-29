@@ -86,6 +86,55 @@ impl<'a> Frame<'a> {
                     }
                 },
 
+
+                opcode::POP => {
+                    self.operand_stack.pop();
+                },
+                opcode::POP2 => {
+                    match self.operand_stack.pop() {
+                        Some(Value::Long(_)) | Some(Value::Double(_)) => (),
+                        _ => {
+                            self.operand_stack.pop();
+                        },
+                    }
+                },
+                opcode::DUP => {
+                    let value = self.operand_stack.last().unwrap().clone();
+                    self.operand_stack.push(value);
+                },
+                opcode::DUP_X1 => {
+                    let value1 = self.operand_stack.pop().unwrap();
+                    let value2 = self.operand_stack.pop().unwrap();
+                    self.operand_stack.extend_from_slice(&[value1.clone(), value2, value1]);
+                },
+                opcode::DUP_X2 => {
+                    let value1 = self.operand_stack.pop().unwrap();
+                    let value2 = self.operand_stack.pop().unwrap();
+                    match value2 {
+                        Value::Long(_) | Value::Double(_) => {
+                            self.operand_stack.extend_from_slice(&[value1.clone(), value2, value1]);
+                        },
+                        _ => {
+                            let value3 = self.operand_stack.pop().unwrap();
+                            self.operand_stack.extend_from_slice(
+                                &[value1.clone(), value3, value2, value1]);
+                        },
+                    }
+                },
+                opcode::DUP2 => {
+                    let value1 = self.operand_stack.pop().unwrap();
+                    match value1 {
+                        Value::Long(_) | Value::Double(_) => {
+                            self.operand_stack.extend_from_slice(&[value1.clone(), value1]);
+                        },
+                        _ => {
+                            let value2 = self.operand_stack.pop().unwrap();
+                            self.operand_stack.extend_from_slice(
+                                &[value2.clone(), value1.clone(), value2, value1]);
+                        },
+                    }
+                },
+
                 _ => panic!("undefined or reserved opcode"),
             }
         }
