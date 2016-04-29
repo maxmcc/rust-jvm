@@ -1,3 +1,5 @@
+use model::class_file::access_flags::class_access_flags;
+
 use vm::{Method, Value};
 use vm::class_loader::ClassLoader;
 use vm::constant_pool::{RuntimeConstantPool, RuntimeConstantPoolEntry};
@@ -184,6 +186,41 @@ impl<'a> Frame<'a> {
                         }
                     } else {
                         panic!("invokevirtual refers to non-method in constant pool");
+                    }
+                },
+
+                opcode::INVOKESPECIAL => {
+                    let index = self.read_next_short();
+                    if let Some(RuntimeConstantPoolEntry::MethodRef(ref symref)) =
+                            self.runtime_constant_pool[index] {
+                        // TODO: this should throw Java exceptions instead of unwrapping
+                        let resolved_class = class_loader.resolve_class(&symref.class).unwrap();
+                        let resolved_method = resolved_class.resolve_method(symref);
+                        // TODO: check protected accesses
+                        // TODO: lots of other checks here too
+                        let num_args = symref.sig.params.len();
+                        let args = self.pop_as_locals(num_args + 1);
+
+                        // check the three conditions from the spec
+                        let current_class = class_loader.resolve_class(&self.method.symref.class)
+                                                        .unwrap();
+                        let actual_method = {
+                            if resolved_class.access_flags & class_access_flags::ACC_SUPER == 0
+                                    || !current_class.is_descendant(resolved_class.as_ref())
+                                    || resolved_method.symref.sig.name == "<init>" {
+                                resolved_method
+                            } else {
+                                current_class.superclass.as_ref().and_then(|superclass| {
+                                    superclass.find_method(&symref.sig)
+                                }).expect("AbstractMethodError")
+                            }
+                        };
+                        let actual_class = class_loader.resolve_class(&actual_method.symref.class).unwrap();
+                        let frame = Frame::new(actual_method, actual_class.get_constant_pool(),
+                                               args);
+                        frame.run(class_loader);
+                    } else {
+                        panic!("invokespecial refers to non-method in constant pool");
                     }
                 },
 

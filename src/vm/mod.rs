@@ -216,6 +216,8 @@ pub struct Class {
     /// A symbolic reference to the class, comprised of its name (if a scalar type) or element type
     /// (if an array class).
     symref: symref::Class,
+    /// The access flags for the class.
+    access_flags: u16,
     /// The superclass extended by the class. If the class is `java/lang/Object`, this is `None`.
     superclass: Option<Rc<Class>>,
     /// The runtime constant pool of the current class, created from the constant pool defined in
@@ -257,6 +259,7 @@ impl Class {
 
         Class {
             symref: symref,
+            access_flags: class_file.access_flags,
             superclass: superclass,
             constant_pool: constant_pool,
             class_fields: class_fields,
@@ -266,7 +269,9 @@ impl Class {
     }
 
     /// Create a new array class for a given element type.
-    pub fn new_array(object_class: Rc<Class>, component_type: sig::Type) -> Self {
+    pub fn new_array(object_class: Rc<Class>, component_access_flags: u16,
+                     component_type: sig::Type) -> Self {
+        let access_flags = (component_access_flags & 0x0001) | 0x1030;
         let length_field = sig::Field {
             name: String::from("length"),
             ty: sig::Type::Int,
@@ -276,12 +281,17 @@ impl Class {
         instance_fields.insert(length_field);
         Class {
             symref: symref::Class { sig: sig::Class::Array(Box::new(component_type)) },
+            access_flags: access_flags,
             superclass: Some(object_class.clone()),
             constant_pool: RuntimeConstantPool::new(&empty_constant_pool),
             class_fields: HashMap::new(),
             instance_fields: instance_fields,
             methods: HashMap::new(),
         }
+    }
+
+    pub fn get_access_flags(&self) -> u16 {
+        self.access_flags
     }
 
     pub fn get_constant_pool(&self) -> &RuntimeConstantPool {
@@ -294,7 +304,7 @@ impl Class {
         self.find_method(&method_symref.sig).expect("NoSuchMethodError")
     }
 
-    fn find_method(&self, method_sig: &sig::Method) -> Option<&Method> {
+    pub fn find_method(&self, method_sig: &sig::Method) -> Option<&Method> {
         self.methods.get(method_sig).or_else(|| {
             self.superclass.as_ref().and_then(|superclass| superclass.find_method(method_sig))
         })
@@ -320,6 +330,16 @@ impl Class {
         }).or_else({||
             self.superclass.as_ref().and_then(|superclass| superclass.dispatch_method(resolved_method))
         })
+    }
+
+    pub fn is_descendant(&self, other: &Class) -> bool {
+        if self.symref.sig == other.symref.sig {
+            true
+        } else {
+            self.superclass.as_ref().map_or(false, |superclass| {
+                superclass.is_descendant(other)
+            })
+        }
     }
 }
 

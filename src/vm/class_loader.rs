@@ -218,19 +218,20 @@ impl ClassLoader {
             sig::Class::Array(ref component_type) => {
                 // load the component type class, even though we don't use it, to ensure that any
                 // errors resulting from the load happen at the right time
-                try!(
+                let component_access_flags = try!(
                     match **component_type {
                         sig::Type::Byte | sig::Type::Char | sig::Type::Double
                             | sig::Type::Float | sig::Type::Int | sig::Type::Long
-                            | sig::Type::Short | sig::Type::Boolean => Ok(None),
+                            | sig::Type::Short | sig::Type::Boolean => Ok(0x1031),
                         sig::Type::Reference(ref component_sig) =>
-                            self.load_class(component_sig).map(|class| Some(class))
+                            self.load_class(component_sig).map(|class| class.get_access_flags())
                     }
                 );
                 let object_name = String::from("java/lang/Object");
                 let object_sig = sig::Class::Scalar(object_name);
                 let object_class = try!(self.load_class(&object_sig));
-                let class = vm::Class::new_array(object_class, *component_type.clone());
+                let class = vm::Class::new_array(object_class, component_access_flags,
+                                                 *component_type.clone());
                 let rc = Rc::new(class);
                 self.classes.insert(sig.clone(), rc.clone());
                 Ok(rc)
