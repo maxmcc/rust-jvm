@@ -16,6 +16,7 @@ use model::class_file::{ClassFile, MethodInfo};
 use model::class_file::access_flags;
 use model::class_file::attribute::{AttributeInfo, ExceptionTableEntry};
 use vm::constant_pool::handle::Type;
+use vm::stack::Frame;
 
 /// A value in the Java virtual machine.
 #[derive(Debug, Clone)]
@@ -98,24 +99,32 @@ impl Class {
             methods: HashMap::new(),
         }
     }
+
+    pub fn create_frame<'a>(&'a self, method_handle: &handle::Method,
+                            local_variables: Vec<Option<Value>>) -> Option<Frame<'a>> {
+        self.methods.get(method_handle).map(move |ref method| {
+            Frame::new(method, &self.constant_pool, local_variables)
+        })
+    }
 }
 
 #[derive(Debug)]
 pub struct Method {
-    symref: symref::Method,
-    max_stack: u16,
-    max_locals: u16,
-    code: Vec<bytecode::Instruction>,
-    exception_table: Vec<ExceptionTableEntry>,
+    pub symref: symref::Method,
+    pub code: Vec<u8>,
+    pub exception_table: Vec<ExceptionTableEntry>,
 }
 
 impl Method {
     pub fn new(symref: symref::Method, method_info: MethodInfo) -> Self {
         for attribute_info in method_info.attributes {
             match attribute_info {
-                AttributeInfo::Code { max_stack, max_locals, code, exception_table, .. } => {
-                    // TODO translate the code and exception_table
-                    panic!("not yet implemented");
+                AttributeInfo::Code { code, exception_table, .. } => {
+                    return Method {
+                        symref: symref,
+                        code: code,
+                        exception_table: exception_table,
+                    }
                 },
 
                 _ => (),
