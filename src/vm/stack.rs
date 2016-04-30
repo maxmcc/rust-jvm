@@ -4,11 +4,13 @@ use std::rc::Rc;
 
 use model::class_file::access_flags::class_access_flags;
 
-use vm::{sig, symref, Array, Class, Method, MethodCode, Scalar, Value};
-use vm::sig::Type;
-use vm::class_loader::ClassLoader;
-use vm::constant_pool::{RuntimeConstantPoolEntry};
+use vm::{sig, symref};
 use vm::bytecode::opcode;
+use vm::class::{Class, Method, MethodCode};
+use vm::class_loader::ClassLoader;
+use vm::constant_pool::RuntimeConstantPoolEntry;
+use vm::sig::Type;
+use vm::value::{Array, Scalar, Value};
 
 /// A frame is used to store data and partial results, as well as to perform dynamic linking,
 /// return values for methods, and dispatch exceptions.

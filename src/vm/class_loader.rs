@@ -1,8 +1,6 @@
-use std::error;
-use std::fmt;
+use std::{error, fmt};
 use std::fs::File;
-use std::io;
-use std::io::Read;
+use std::io::{self, Read};
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
@@ -10,7 +8,8 @@ use nom;
 
 use model::class_file::ClassFile;
 use parser::class_file;
-use vm::{self, sig, symref};
+use vm::{sig, symref};
+use vm::class;
 use vm::constant_pool::{RuntimeConstantPool, RuntimeConstantPoolEntry};
 
 #[derive(Debug)]
@@ -74,7 +73,7 @@ impl error::Error for Error {
 
 #[derive(Debug)]
 pub struct ClassLoader {
-    classes: HashMap<sig::Class, Rc<vm::Class>>,
+    classes: HashMap<sig::Class, Rc<class::Class>>,
     pending: HashSet<sig::Class>,
 }
 
@@ -104,14 +103,14 @@ impl ClassLoader {
         }
     }
 
-    pub fn resolve_class(&mut self, symref: &symref::Class) -> Result<Rc<vm::Class>, Error> {
+    pub fn resolve_class(&mut self, symref: &symref::Class) -> Result<Rc<class::Class>, Error> {
         // TODO check access modifiers
         self.load_class(&symref.sig)
     }
 
     /// Derives the super class (if it exists) of the specified class.
     fn derive_super_class(&mut self, rcp: &RuntimeConstantPool, class_file: &ClassFile)
-            -> Result<Option<Rc<vm::Class>>, Error> {
+            -> Result<Option<Rc<class::Class>>, Error> {
         if class_file.super_class == 0 {
             Ok(None)
         } else {
@@ -122,7 +121,7 @@ impl ClassLoader {
 
     /// Derives the specified class and its interfaces, but not its superclass.
     fn derive_class(&mut self, original_name: &str, sig: &sig::Class, class_bytes: &[u8])
-                    -> Result<Rc<vm::Class>, Error> {
+                    -> Result<Rc<class::Class>, Error> {
         // TODO we discard the parse errors, but it's so hard to fix that...
         let parsed_class = try!(
             match class_file::parse_class_file(&class_bytes) {
@@ -154,7 +153,7 @@ impl ClassLoader {
                 try!(self.resolve_class(&iface_symref));
             }
             let symref = symref::Class { sig: sig.clone() };
-            let class = vm::Class::new(symref, super_class, rcp, parsed_class);
+            let class = class::Class::new(symref, super_class, rcp, parsed_class);
             let rc = Rc::new(class);
             self.classes.insert(sig.clone(), rc.clone());
             Ok(rc)
@@ -174,7 +173,7 @@ impl ClassLoader {
     /// This implementation does not attempt to perform bytecode verification; we assume that any
     /// class files we attempt to load are valid.
     fn load_class_bytes(&mut self, name: &str, sig: &sig::Class, class_bytes: &[u8])
-                            -> Result<Rc<vm::Class>, Error> {
+                            -> Result<Rc<class::Class>, Error> {
         self.derive_class(name, sig, class_bytes)
     }
 
@@ -188,7 +187,7 @@ impl ClassLoader {
     ///
     /// This implementation does not attempt to perform bytecode verification; we assume that any
     /// class files we attempt to load are valid.
-    pub fn load_class(&mut self, sig: &sig::Class) -> Result<Rc<vm::Class>, Error> {
+    pub fn load_class(&mut self, sig: &sig::Class) -> Result<Rc<class::Class>, Error> {
         if self.pending.contains(&sig) {
             // we're already resolving this name
             return Err(Error::ClassCircularity)
@@ -226,7 +225,7 @@ impl ClassLoader {
                 let object_name = String::from("java/lang/Object");
                 let object_sig = sig::Class::Scalar(object_name);
                 let object_class = try!(self.load_class(&object_sig));
-                let class = vm::Class::new_array(object_class, component_access_flags,
+                let class = class::Class::new_array(object_class, component_access_flags,
                                                  *component_type.clone());
                 let rc = Rc::new(class);
                 self.classes.insert(sig.clone(), rc.clone());

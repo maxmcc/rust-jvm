@@ -5,18 +5,18 @@ use std::rc::Rc;
 
 pub use model::class_file::constant_pool::constant_pool_index;
 use model::class_file::constant_pool::{ConstantPool, ConstantPoolInfo};
-use vm::{self, sig, symref, Array, Scalar, Value};
-use vm::class_loader;
-use vm::class_loader::ClassLoader;
-use vm::stack::Frame;
 use util::one_indexed_vec::OneIndexedVec;
+use vm::{sig, symref};
+use vm::class_loader::{self, ClassLoader};
+use vm::stack::Frame;
+use vm::value::{Array, Scalar, Value};
 
 #[derive(Debug)]
 pub enum RuntimeConstantPoolEntry {
     ClassRef(symref::Class),
     MethodRef(symref::Method),
     FieldRef(symref::Field),
-    ResolvedLiteral(vm::Value),
+    ResolvedLiteral(Value),
     UnresolvedString(constant_pool_index),
     StringValue(ModifiedUtf8String),
 }
@@ -73,24 +73,24 @@ impl RuntimeConstantPool {
                 },
 
                 ConstantPoolInfo::Integer { bytes } => {
-                    let value = vm::Value::Int(Wrapping(bytes as i32));
+                    let value = Value::Int(Wrapping(bytes as i32));
                     Some(RuntimeConstantPoolEntry::ResolvedLiteral(value))
                 },
 
                 ConstantPoolInfo::Float { bytes } => {
-                    let value = vm::Value::Float(bytes as f32);
+                    let value = Value::Float(bytes as f32);
                     Some(RuntimeConstantPoolEntry::ResolvedLiteral(value))
                 },
 
                 ConstantPoolInfo::Long { high_bytes, low_bytes } => {
                     let bits = ((high_bytes as i64) << 32) & (low_bytes as i64);
-                    let value = vm::Value::Long(Wrapping(bits));
+                    let value = Value::Long(Wrapping(bits));
                     Some(RuntimeConstantPoolEntry::ResolvedLiteral(value))
                 },
 
                 ConstantPoolInfo::Double { high_bytes, low_bytes } => {
                     let bits = ((high_bytes as u64) << 32) & (low_bytes as u64);
-                    let value = vm::Value::Double(bits as f64);
+                    let value = Value::Double(bits as f64);
                     Some(RuntimeConstantPoolEntry::ResolvedLiteral(value))
                 },
 

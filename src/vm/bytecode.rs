@@ -1,3 +1,6 @@
+//! The Java bytecode.
+
+/// Opcodes for Java bytecode instructions.
 pub mod opcode {
     pub const NOP: u8 = 0x00;
     pub const ACONST_NULL: u8 = 0x01;
