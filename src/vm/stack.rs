@@ -4,7 +4,8 @@ use std::rc::Rc;
 
 use model::class_file::access_flags::class_access_flags;
 
-use vm::{Class, Method, MethodCode, Scalar, Value};
+use vm::{sig, symref, Array, Class, Method, MethodCode, Scalar, Value};
+use vm::sig::Type;
 use vm::class_loader::ClassLoader;
 use vm::constant_pool::{RuntimeConstantPoolEntry};
 use vm::bytecode::opcode;
@@ -296,6 +297,42 @@ impl<'a> Frame<'a> {
                     }
                 },
 
+                opcode::GETFIELD => {
+                    let index = self.read_next_short();
+                    if let Some(RuntimeConstantPoolEntry::FieldRef(ref symref)) =
+                            self.current_class.get_constant_pool()[index] {
+                        match self.operand_stack.pop().unwrap() {
+                            Value::ScalarReference(object_rc) => {
+                                let value = object_rc.borrow().get_field(&symref.sig).clone();
+                                self.operand_stack.push(value);
+                            },
+                            Value::ArrayReference(_) => panic!("getfield called on array"),
+                            Value::NullReference => panic!("NullPointerException"),
+                            _ => panic!("getfield called on a primitive value"),
+                        }
+                    } else {
+                        panic!("getfield refers to non-field in constant pool");
+                    }
+                },
+
+                opcode::PUTFIELD => {
+                    let index = self.read_next_short();
+                    let value = self.operand_stack.pop().unwrap();
+                    if let Some(RuntimeConstantPoolEntry::FieldRef(ref symref)) =
+                            self.current_class.get_constant_pool()[index] {
+                        match self.operand_stack.pop().unwrap() {
+                            Value::ScalarReference(object_rc) => {
+                                object_rc.borrow_mut().put_field(symref.sig.clone(), value);
+                            },
+                            Value::ArrayReference(_) => panic!("putfield called on array"),
+                            Value::NullReference => panic!("NullPointerException"),
+                            _ => panic!("putfield called on a primitive value"),
+                        }
+                    } else {
+                        panic!("putfield refers to non-field in constant pool");
+                    }
+                },
+
                 opcode::INVOKEVIRTUAL => {
                     let index = self.read_next_short();
                     if let Some(RuntimeConstantPoolEntry::MethodRef(ref symref)) =
@@ -388,7 +425,45 @@ impl<'a> Frame<'a> {
                     } else {
                         panic!("new refers to non-class in constant pool");
                     }
-                }
+                },
+
+                opcode::NEWARRAY => {
+                    let type_tag = self.read_next_byte();
+                    let component_ty = match type_tag {
+                        4 => Type::Boolean,
+                        5 => Type::Char,
+                        6 => Type::Float,
+                        7 => Type::Double,
+                        8 => Type::Byte,
+                        9 => Type::Short,
+                        10 => Type::Int,
+                        11 => Type::Long,
+                        _ => panic!("newarray: bad type tag"),
+                    };
+                    let class_sig = sig::Class::Array(Box::new(component_ty));
+                    let class_symref = symref::Class { sig: class_sig };
+                    let class = class_loader.resolve_class(&class_symref).unwrap();
+
+                    match self.operand_stack.pop().unwrap() {
+                        Value::Int(Wrapping(length)) => {
+                            let array = Array::new(class, length);
+                            let array_rc = Rc::new(RefCell::new(array));
+                            self.operand_stack.push(Value::ArrayReference(array_rc));
+                        },
+                        _ => panic!("newarray called with non-int length"),
+                    }
+                },
+
+                opcode::ARRAYLENGTH => {
+                    match self.operand_stack.pop().unwrap() {
+                        Value::ArrayReference(array_rc) => {
+                            let len = array_rc.borrow().len();
+                            self.operand_stack.push(Value::Int(Wrapping(len)));
+                        },
+                        Value::NullReference => panic!("NullPointerException"),
+                        _ => panic!("arraylength called on non-array"),
+                    }
+                },
 
                 _ => {
                     println!("{}", self.method_code.code[(self.pc as usize) - 1]);

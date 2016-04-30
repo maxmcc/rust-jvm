@@ -514,6 +514,7 @@ pub struct Scalar {
     fields: HashMap<sig::Field, Value>,
 }
 
+// TODO the semantics of getting and putting fields are incorrect w/r/t inheritance
 impl Scalar {
     pub fn new(class: Rc<Class>) -> Self {
         match class.symref.sig {
@@ -535,6 +536,14 @@ impl Scalar {
 
     pub fn get_class(&self) -> Rc<Class> {
         self.class.clone()
+    }
+
+    pub fn get_field(&self, sig: &sig::Field) -> Value {
+        self.fields.get(sig).unwrap().clone()
+    }
+
+    pub fn put_field(&mut self, sig: sig::Field, value: Value) {
+        self.fields.insert(sig, value);
     }
 }
 
@@ -580,5 +589,9 @@ impl Array {
             panic!("ArrayIndexOutOfBoundsException");
         }
         self.array[index as usize] = value;
+    }
+
+    pub fn len(&self) -> i32 {
+        self.array.len() as i32
     }
 }
