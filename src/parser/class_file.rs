@@ -24,6 +24,7 @@ pub enum Error {
     ClassFile,
     Magic,
     ConstantPool { constant_pool_count: usize },
+    ConstantPoolEntry { index: usize },
     ConstantPoolInfo,
     UnknownConstantPoolTag { tag: u8 },
     ConstantPoolIndexOutOfBounds { index: usize },
@@ -974,33 +975,32 @@ fn method<'a, 'b>(input: Input<'a>, constant_pool: &'b ConstantPool)
                })))
 }
 
-/// Fixes the constant pool by inserting invalid elements.
-///
-/// All 8-byte constants take up two entries in the constant_pool table of the class file. If a
-/// `CONSTANT_Long_info` or `CONSTANT_Double_info` structure is the item in the `constant_pool`
-/// table at index _n_, then the next usable item in the pool is located at index _n_ + 2. The
-/// constant_pool index _n_ + 1 must be valid but is considered unusable.
-fn fix_constant_pool_vec_0(mut constant_pool: Vec<ConstantPoolInfo>) -> Vec<ConstantPoolInfo> {
-    let mut unshifted_indices = Vec::new();
-    for (i, entry) in constant_pool.iter().enumerate() {
-        match *entry {
-            ConstantPoolInfo::Long { .. } => unshifted_indices.push(i),
-            ConstantPoolInfo::Double { .. } => unshifted_indices.push(i),
-            _ => (),
+macro_rules! constant_pool_special_count {
+    ($input: expr, $submac:ident ! ( $($args: tt)* ), $count: expr) => ({
+        let mut entries = Vec::with_capacity($count);
+        let mut i = 0;
+        let mut input = $input;
+        while i < $count {
+            let (next_input, entry) = p_try!(input, p_wrap_nom!(
+                p_cut!(Error::ConstantPoolEntry { index: i }, $submac!($($args)*))));
+            input = next_input;
+            match entry {
+                ConstantPoolInfo::Long { .. } | ConstantPoolInfo::Double { .. } => {
+                    entries.push(entry);
+                    entries.push(ConstantPoolInfo::Unusable);
+                    i += 2;
+                },
+                _ => {
+                    entries.push(entry);
+                    i += 1;
+                },
+            }
         }
-    }
-    constant_pool.reserve_exact(unshifted_indices.len());
-    for (i, index) in unshifted_indices.iter().enumerate() {
-        constant_pool.insert(index + i + 1, ConstantPoolInfo::Unusable);
-    }
-    constant_pool
-
+        done!(input, entries)
+    });
 }
 
-/// Parses a Java class file.
-///
-/// `parser::class_file::parse_class_file(&[u8]) -> ParseResult<model::class_file::ClassFile>)`
-n!(pub parse_class_file<Input, ClassFile, Error>, p_cut!(
+n!(class_file_parser<Input, ClassFile, Error>, p_cut!(
     Error::ClassFile,
     chain!(c!(magic) ~
            minor_version: p!(be_u16) ~
@@ -1010,8 +1010,8 @@ n!(pub parse_class_file<Input, ClassFile, Error>, p_cut!(
                Error::ConstantPool {
                    constant_pool_count: constant_pool_count as usize
                },
-               map!(count!(c!(cp_info), constant_pool_count as usize - 1),
-                    |entries| ConstantPool::from_zero_indexed_vec(fix_constant_pool_vec_0(entries)))) ~
+               map!(constant_pool_special_count!(c!(cp_info), constant_pool_count as usize - 1),
+                    ConstantPool::from_zero_indexed_vec)) ~
            access_flags: p!(be_u16) ~
            this_class: c!(cp_index_tag, &constant_pool, constant_pool::Tag::Class) ~
            super_class: c!(maybe_cp_index_tag, &constant_pool, constant_pool::Tag::Class) ~
@@ -1041,61 +1041,32 @@ n!(pub parse_class_file<Input, ClassFile, Error>, p_cut!(
                attributes: attributes,
            })));
 
+/// Parses a Java class file.
+pub fn parse_class_file(input: Input) -> nom::IResult<Input, ClassFile, Error> {
+    match class_file_parser(input) {
+        Ok(r) => r,
+        Err(e) => nom::IResult::Error(e),
+    }
+}
+
+
 #[cfg(test)]
 mod test {
     use super::*;
-    use super::fix_constant_pool_vec_0;
-    use model::class_file::ConstantPoolInfo;
 
     #[test]
     fn test_hello_world() {
         let data = include_bytes!("../../data/HelloWorld.class");
-        parse_class_file(data).unwrap();
-    }
-
-    macro_rules! long {
-        () => (ConstantPoolInfo::Long { high_bytes: 0, low_bytes:0 });
-    }
-
-    macro_rules! double {
-        () => (ConstantPoolInfo::Long { high_bytes: 0, low_bytes:0 });
-    }
-
-    macro_rules! integer {
-        () => (ConstantPoolInfo::Integer { bytes: 0 });
-    }
-
-    fn test_fix_constant_pool_vec_0_empty() {
-        let pool = vec![];
-        assert_eq!(fix_constant_pool_vec_0(pool), vec![]);
-    }
-
-    fn test_fix_constant_pool_vec_0_no_op() {
-        let pool = vec![integer!(), integer!(), integer!(), integer!()];
-        assert_eq!(vec![integer!(), integer!(), integer!(), integer!()],
-                   fix_constant_pool_vec_0(pool));
+        assert!(parse_class_file(data).is_done());
     }
 
     #[test]
-    fn test_fix_constant_pool_vec_0_singleton() {
-        let pool = vec![long!()];
-        assert_eq!(vec![long!(), ConstantPoolInfo::Unusable], fix_constant_pool_vec_0(pool));
-    }
-
-    #[test]
-    fn test_fix_constant_pool_vec_0_2() {
-        let pool = vec![long!(), double!()];
-        assert_eq!(vec![long!(), ConstantPoolInfo::Unusable, double!(), ConstantPoolInfo::Unusable],
-                   fix_constant_pool_vec_0(pool));
-    }
-
-    #[test]
-    fn test_fix_constant_pool_vec_0_3() {
-        let pool = vec![integer!(), long!(), double!(), double!(), integer!()];
-        assert_eq!(vec![integer!(), long!(), ConstantPoolInfo::Unusable,
-                        double!(), ConstantPoolInfo::Unusable,
-                        double!(), ConstantPoolInfo::Unusable, integer!()],
-                   fix_constant_pool_vec_0(pool));
+    fn test_java_lang_string() {
+        let data = include_bytes!("../../data/String.class"); // java.lang.String
+        match parse_class_file(data) {
+            ::nom::IResult::Done(_, class) => assert_eq!(536, class.constant_pool.len()),
+            _ => panic!("Failed to parse."),
+        }
     }
 
 }

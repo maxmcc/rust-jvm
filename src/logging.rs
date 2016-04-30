@@ -3,13 +3,13 @@ use std::io::Write;
 use log;
 use log::{LogRecord, LogLevelFilter, LogMetadata, SetLoggerError};
 
+/// Prints to standard error.
 #[macro_export]
 macro_rules! eprintln {
     ($($arg:tt)*) => ({
         writeln!(&mut ::std::io::stderr(), $($arg)*).unwrap()
     })
 }
-
 
 #[macro_export]
 macro_rules! with_warn {
