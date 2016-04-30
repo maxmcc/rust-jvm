@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 pub use model::class_file::constant_pool::constant_pool_index;
 use model::class_file::constant_pool::{ConstantPool, ConstantPoolInfo};
-use vm::{self, sig, symref, Object, Value};
+use vm::{self, sig, symref, Array, Scalar, Value};
 use vm::class_loader;
 use vm::class_loader::ClassLoader;
 use vm::stack::Frame;
@@ -168,7 +168,7 @@ impl RuntimeConstantPool {
                         panic!("expected RuntimeConstantPoolEntry::StringValue");
                     }
                 };
-                let mut array = Object::new_array(array_class, chars.len() as i32);
+                let mut array = Array::new(array_class, chars.len() as i32);
                 let mut i = 0;
                 for c in chars {
                     array.put(i, Value::Int(Wrapping(c as i32)));
@@ -179,7 +179,7 @@ impl RuntimeConstantPool {
                 let string_sig = sig::Class::Scalar(String::from("java/lang/String"));
                 let string_symref = symref::Class { sig: string_sig };
                 let string_class = try!(class_loader.resolve_class(&string_symref));
-                let string = Object::new(string_class.clone());
+                let string = Scalar::new(string_class.clone());
                 let string_rc = Rc::new(RefCell::new(string));
 
                 let constructor_sig = sig::Method {
@@ -193,11 +193,11 @@ impl RuntimeConstantPool {
                 };
                 let constructor = string_class.resolve_method(&constructor_symref);
                 let constructor_code = constructor.method_code.as_ref().unwrap();
-                let args = vec![Some(Value::Reference(string_rc.clone())),
-                                Some(Value::Reference(array_rc))];
+                let args = vec![Some(Value::ScalarReference(string_rc.clone())),
+                                Some(Value::ArrayReference(array_rc))];
                 let frame = Frame::new(string_class.as_ref(), constructor_code, args);
                 frame.run(class_loader);
-                Ok(Value::Reference(string_rc))
+                Ok(Value::ScalarReference(string_rc))
             },
             _ => panic!("expected literal constant pool entry"),
         }

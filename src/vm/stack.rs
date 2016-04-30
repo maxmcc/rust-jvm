@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use model::class_file::access_flags::class_access_flags;
 
-use vm::{Class, Method, MethodCode, Object, Value};
+use vm::{Class, Method, MethodCode, Scalar, Value};
 use vm::class_loader::ClassLoader;
 use vm::constant_pool::{RuntimeConstantPoolEntry};
 use vm::bytecode::opcode;
@@ -109,7 +109,8 @@ impl<'a> Frame<'a> {
                 let value = self.operand_stack.pop().unwrap();
                 // invalidate the slot after this one if we're storing a category 2 operand
                 match value {
-                    Value::Int(_) | Value::Float(_) | Value::Reference(_) | Value::NullReference => (),
+                    Value::Int(_) | Value::Float(_) | Value::ScalarReference(_)
+                            | Value::ArrayReference(_) | Value::NullReference => (),
                     Value::Long(_) | Value::Double(_) => {
                         self.local_variables[($index + 1) as usize] = None;
                     },
@@ -121,7 +122,8 @@ impl<'a> Frame<'a> {
                 let prev_index = $index - 1;
                 if prev_index > 0 {
                     match self.local_variables[prev_index as usize] {
-                        None | Some(Value::Int(_)) | Some(Value::Float(_)) | Some(Value::Reference(_))
+                        None | Some(Value::Int(_)) | Some(Value::Float(_))
+                                | Some(Value::ScalarReference(_)) | Some(Value::ArrayReference(_))
                                 | Some(Value::NullReference) => (),
                         Some(Value::Long(_)) | Some(Value::Double(_)) => {
                             self.local_variables[prev_index as usize] = None;
@@ -175,12 +177,12 @@ impl<'a> Frame<'a> {
                     if let Value::Int(Wrapping(index)) = index_value {
                         let array_value = self.operand_stack.pop().unwrap();
                         match array_value {
-                            Value::Reference(array_rc) => {
+                            Value::ArrayReference(array_rc) => {
                                 let component = array_rc.borrow().get(index);
                                 self.operand_stack.push(component);
                             },
                             Value::NullReference => panic!("NullPointerException"),
-                            _ => panic!("xaload instruction on primitive value"),
+                            _ => panic!("xaload instruction on non-array value"),
                         }
                     } else {
                         panic!("xaload instruction on non-integer index");
@@ -209,11 +211,11 @@ impl<'a> Frame<'a> {
                     if let Value::Int(Wrapping(index)) = index_value {
                         let array_value = self.operand_stack.pop().unwrap();
                         match array_value {
-                            Value::Reference(array_rc) => {
+                            Value::ArrayReference(array_rc) => {
                                 array_rc.borrow_mut().put(index, value);
                             },
                             Value::NullReference => panic!("NullPointerException"),
-                            _ => panic!("xastore instruction on primitive value"),
+                            _ => panic!("xastore instruction on non-array value"),
                         }
                     } else {
                         panic!("xastore instruction on non-integer index");
@@ -307,13 +309,13 @@ impl<'a> Frame<'a> {
                         let args = self.pop_as_locals(num_args + 1);
                         let object_class = {
                             let object_value = &args[0];
-                            if let Some(Value::NullReference) = *object_value {
-                                panic!("NullPointerException")
-                            } else if let Some(Value::Reference(ref object_ref)) = *object_value {
-                                let object = object_ref.as_ref().borrow();
-                                object.get_class().clone()
-                            } else {
-                                panic!("invokevirtual on a primitive type");
+                            match *object_value {
+                                Some(Value::ScalarReference(ref scalar_rc)) =>
+                                    scalar_rc.borrow().get_class().clone(),
+                                Some(Value::ArrayReference(ref array_rc)) =>
+                                    array_rc.borrow().get_class().clone(),
+                                Some(Value::NullReference) => panic!("NullPointerException"),
+                                _ => panic!("invokevirtual on a primitive type"),
                             }
                         };
                         match object_class.dispatch_method(resolved_method) {
@@ -380,8 +382,9 @@ impl<'a> Frame<'a> {
                             self.current_class.get_constant_pool()[index] {
                         // TODO proper error checking
                         let resolved_class = class_loader.resolve_class(symref).unwrap();
-                        let object = Object::new(resolved_class);
-                        self.operand_stack.push(Value::Reference(Rc::new(RefCell::new(object))));
+                        let object = Scalar::new(resolved_class);
+                        let object_rc = Rc::new(RefCell::new(object));
+                        self.operand_stack.push(Value::ScalarReference(object_rc));
                     } else {
                         panic!("new refers to non-class in constant pool");
                     }

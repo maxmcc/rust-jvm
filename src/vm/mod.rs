@@ -206,8 +206,10 @@ pub enum Value {
     Long(Wrapping<i64>),
     /// A 64-bit floating-point type, representing the Java type `double`.
     Double(f64),
-    /// A reference to a Java object in the heap.
-    Reference(Rc<RefCell<Object>>),
+    /// A reference to a scalar Java object in the heap.
+    ScalarReference(Rc<RefCell<Scalar>>),
+    /// A reference to a Java array in the heap.
+    ArrayReference(Rc<RefCell<Array>>),
     /// A reference to a Java object which is `null`.
     NullReference,
 }
@@ -507,12 +509,12 @@ pub struct MethodCode {
 }
 
 #[derive(Debug)]
-pub enum Object {
-    Scalar { class: Rc<Class>, fields: HashMap<sig::Field, Value> },
-    Array { class: Rc<Class>, array: Vec<Value> },
+pub struct Scalar {
+    class: Rc<Class>,
+    fields: HashMap<sig::Field, Value>,
 }
 
-impl Object {
+impl Scalar {
     pub fn new(class: Rc<Class>) -> Self {
         match class.symref.sig {
             sig::Class::Scalar(_) => {
@@ -522,27 +524,39 @@ impl Object {
                     let value = sig.ty.default_value();
                     fields.insert(sig, value);
                 }
-                Object::Scalar {
+                Scalar {
                     class: class,
                     fields: fields,
                 }
             },
-            sig::Class::Array(_) => panic!("can't construct array without length"),
+            sig::Class::Array(_) => panic!("can't construct scalar from array class"),
         }
     }
 
-    pub fn new_array(class: Rc<Class>, length: i32) -> Self {
+    pub fn get_class(&self) -> Rc<Class> {
+        self.class.clone()
+    }
+}
+
+#[derive(Debug)]
+pub struct Array {
+    class: Rc<Class>,
+    array: Vec<Value>,
+}
+
+impl Array {
+    pub fn new(class: Rc<Class>, length: i32) -> Self {
         if length < 0 {
             panic!("NegativeArraySizeException");
         }
         match class.symref.sig {
-            sig::Class::Scalar(_) => panic!("can't construct scalar with length"),
+            sig::Class::Scalar(_) => panic!("can't construct array from scalar class"),
             sig::Class::Array(ref component_ty) => {
                 let mut array = Vec::with_capacity(length as usize);
                 for _ in 0..length {
                     array.push(component_ty.default_value());
                 }
-                Object::Array {
+                Array {
                     class: class.clone(),
                     array: array,
                 }
@@ -550,34 +564,21 @@ impl Object {
         }
     }
 
-    // TODO do something different with this
-    pub fn get(&self, index: i32) -> Value {
-        if let Object::Array { ref array, .. } = *self {
-            if index < 0 || (index as usize) >= array.len() {
-                panic!("ArrayIndexOutOfBoundsException")
-            }
-            array[index as usize].clone()
-        } else {
-            panic!("not an array")
-        }
-    }
-
-    // TODO do something different with this
-    pub fn put(&mut self, index: i32, value: Value) {
-        if let Object::Array { ref mut array, .. } = *self {
-            if index < 0 || (index as usize) >= array.len() {
-                panic!("ArrayIndexOutOfBoundsException");
-            }
-            array[index as usize] = value;
-        } else {
-            panic!("not an array");
-        }
-    }
-
     pub fn get_class(&self) -> Rc<Class> {
-        match *self {
-            Object::Scalar { ref class, .. } => class.clone(),
-            Object::Array { ref class, .. } => class.clone(),
+        self.class.clone()
+    }
+
+    pub fn get(&self, index: i32) -> Value {
+        if index < 0 || (index as usize) >= self.array.len() {
+            panic!("ArrayIndexOutOfBoundsException")
         }
+        self.array[index as usize].clone()
+    }
+
+    pub fn put(&mut self, index: i32, value: Value) {
+        if index < 0 || (index as usize) >= self.array.len() {
+            panic!("ArrayIndexOutOfBoundsException");
+        }
+        self.array[index as usize] = value;
     }
 }
