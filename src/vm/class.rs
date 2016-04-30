@@ -127,18 +127,25 @@ impl Class {
         &self.constant_pool
     }
 
-    // TODO access control
+    /// Find the method in the current class referred to by a given symbolic reference. If the
+    /// method is not found, panics with a `NoSuchMethodError`.
     pub fn resolve_method(&self, method_symref: &symref::Method) -> &Method {
+        // TODO access control
         // TODO check if this is an interface
         self.find_method(&method_symref.sig).expect("NoSuchMethodError")
     }
 
+    /// Implements dynamic lookup of a method's signature in the current class. If no method with
+    /// the given signature is found, then recursively searches the current class's superclasses.
     pub fn find_method(&self, method_sig: &sig::Method) -> Option<&Method> {
         self.methods.get(method_sig).or_else(|| {
             self.superclass.as_ref().and_then(|superclass| superclass.find_method(method_sig))
         })
     }
 
+    /// Implements dynamic dispatch of a resolved method according to the lookup procedure
+    /// specified for the `invokevirtual` instruction. Method resolution depends on whether the
+    /// method in question overrides a superclass method. (See spec for more information.)
     pub fn dispatch_method(&self, resolved_method: &Method) -> Option<(&Class, &Method)> {
         self.methods.get(&resolved_method.symref.sig).and_then(|our_method| {
             if our_method.access_flags & access_flags::method_access_flags::ACC_PRIVATE != 0
@@ -161,6 +168,7 @@ impl Class {
         })
     }
 
+    /// Returns true if this class is a descendant (direct or indirect subclass) of another class.
     pub fn is_descendant(&self, other: &Class) -> bool {
         if self.symref.sig == other.symref.sig {
             true
@@ -171,6 +179,9 @@ impl Class {
         }
     }
 
+    /// Initialize the class by executing its class or interface initialization method.  Prior to
+    /// initialization, a class or interface must be linked, that is, verified, prepared, and
+    /// optionally resolved.
     fn initialize(&self, class_loader: &mut ClassLoader) {
         // we don't want to have the RefCell borrowed during the initializer
         // therefore, we borrow it in an inner scope and run the initializer later
@@ -222,6 +233,7 @@ impl Class {
         }
     }
 
+    /// Resolves a symbolic reference to a field and reads a value from that field.
     pub fn resolve_and_get_field(&self, symref: &symref::Field, class_loader: &mut ClassLoader)
             -> Value {
         self.initialize(class_loader);
@@ -236,6 +248,7 @@ impl Class {
         })
     }
 
+    /// Resolves a symbolic reference to a field and writes a new value to that field.
     pub fn resolve_and_put_field(&self, symref: &symref::Field, new_value: Value,
                                  class_loader: &mut ClassLoader) {
         self.initialize(class_loader);
@@ -250,7 +263,10 @@ impl Class {
         }
     }
 
+    /// Returns a set of the signatures of the fields of an instance of this class.
     pub fn collect_instance_fields(&self) -> HashSet<sig::Field> {
+        // TODO: fix semantics wrt private fields (which aren't inherited, but still exist in a
+        // class object)
         let mut instance_fields = self.superclass.as_ref().map(|superclass| {
             superclass.collect_instance_fields()
         }).unwrap_or(HashSet::new());
@@ -308,3 +324,4 @@ pub struct MethodCode {
     /// The method's exception table, used for catching `Throwable`s. Order is significant.
     pub exception_table: Vec<ExceptionTableEntry>,
 }
+

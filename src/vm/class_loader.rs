@@ -56,9 +56,10 @@ impl error::Error for Error {
             Error::ClassFormat => "invalid class format",
             Error::UnsupportedVersion { .. } => "unsupported version",
             Error::NoClassDefFound { .. } => "class representation is not of the requested class",
-            Error::NoClassDefFoundCause { .. } => "no class definition because a superclass is not found",
-            Error::IncompatibleClassChange(_) => "declared superclass (superinterface) is actually \
-                                                  an interface (class)",
+            Error::NoClassDefFoundCause { .. } =>
+                "no class definition because a superclass is not found",
+            Error::IncompatibleClassChange(_) =>
+                "declared superclass (superinterface) is actually an interface (class)",
             Error::ClassCircularity => "the class is its own superclass or superinterface",
         }
     }
@@ -72,8 +73,11 @@ impl error::Error for Error {
 }
 
 #[derive(Debug)]
+/// A class loader suitable for loading classes into the JVM.
 pub struct ClassLoader {
+    /// The classes that have already been resolved by this class loader.
     classes: HashMap<sig::Class, Rc<class::Class>>,
+    /// The signatures of classes that have not yet been resolved by this class loader.
     pending: HashSet<sig::Class>,
 }
 
@@ -85,6 +89,7 @@ impl ClassLoader {
         }
     }
 
+    /// Given a class name, read the bytes from the corresponding class file.
     fn find_class_bytes(&mut self, name: &str) -> Result<Vec<u8>, io::Error> {
         // isn't this so convenient!
         // FIXME: Set up classpath for find_class_bytes
@@ -95,6 +100,7 @@ impl ClassLoader {
         })
     }
 
+    /// Get the symbolic reference to a class from a runtime constant pool index.
     fn get_class_ref(rcp: &RuntimeConstantPool, index: u16)-> Result<&symref::Class, Error> {
         if let Some(RuntimeConstantPoolEntry::ClassRef(ref class_symref)) = rcp[index] {
             Ok(class_symref)
@@ -103,6 +109,7 @@ impl ClassLoader {
         }
     }
 
+    /// Load a class based on a symbolic reference.
     pub fn resolve_class(&mut self, symref: &symref::Class) -> Result<Rc<class::Class>, Error> {
         // TODO check access modifiers
         self.load_class(&symref.sig)
@@ -236,3 +243,4 @@ impl ClassLoader {
         res
     }
 }
+
