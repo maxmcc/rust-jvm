@@ -531,6 +531,37 @@ impl Object {
         }
     }
 
+    pub fn new_array(class: Rc<Class>, length: i32) -> Self {
+        if length < 0 {
+            panic!("NegativeArraySizeException");
+        }
+        match class.symref.sig {
+            sig::Class::Scalar(_) => panic!("can't construct scalar with length"),
+            sig::Class::Array(ref component_ty) => {
+                let mut array = Vec::with_capacity(length as usize);
+                for _ in 0..length {
+                    array.push(component_ty.default_value());
+                }
+                Object::Array {
+                    class: class.clone(),
+                    array: array,
+                }
+            },
+        }
+    }
+
+    // TODO do something different with this
+    pub fn put(&mut self, index: i32, value: Value) {
+        if let Object::Array { ref mut array, .. } = *self {
+            if index < 0 || (index as usize) >= array.len() {
+                panic!("ArrayIndexOutOfBoundsException");
+            }
+            array[index as usize] = value;
+        } else {
+            panic!("not an array");
+        }
+    }
+
     pub fn get_class(&self) -> Rc<Class> {
         match *self {
             Object::Scalar { ref class, .. } => class.clone(),
