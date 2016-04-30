@@ -97,6 +97,13 @@ impl<'a> Frame<'a> {
             });
         }
 
+        macro_rules! do_load {
+            ($index: expr) => ({
+                let value = self.local_variables[$index as usize].clone().unwrap();
+                self.operand_stack.push(value);
+            })
+        }
+
         loop {
             match self.read_next_byte() {
                 opcode::NOP => (),
@@ -119,6 +126,39 @@ impl<'a> Frame<'a> {
                 opcode::SIPUSH => with!(read_next_short, do_ipush),
                 opcode::LDC => with!(read_next_byte, do_ldc),
                 opcode::LDC_W | opcode::LDC2_W => with!(read_next_short, do_ldc),
+
+                // these are a little out of order, since we combine identical cases
+                opcode::ILOAD | opcode::LLOAD | opcode::FLOAD | opcode::DLOAD | opcode::ALOAD =>
+                    with!(read_next_byte, do_load),
+                opcode::ILOAD_0 | opcode::LLOAD_0 | opcode::FLOAD_0 | opcode::DLOAD_0
+                        | opcode::ALOAD_0 =>
+                    do_load!(0),
+                opcode::ILOAD_1 | opcode::LLOAD_1 | opcode::FLOAD_1 | opcode::DLOAD_1
+                        | opcode::ALOAD_1 =>
+                    do_load!(1),
+                opcode::ILOAD_2 | opcode::LLOAD_2 | opcode::FLOAD_2 | opcode::DLOAD_2
+                        | opcode::ALOAD_2 =>
+                    do_load!(2),
+                opcode::ILOAD_3 | opcode::LLOAD_3 | opcode::FLOAD_3 | opcode::DLOAD_3
+                        | opcode::ALOAD_3 =>
+                    do_load!(3),
+                opcode::IALOAD | opcode::LALOAD | opcode::FALOAD | opcode::DALOAD
+                        | opcode::AALOAD | opcode::BALOAD | opcode::CALOAD | opcode::SALOAD => {
+                    let index_value = self.operand_stack.pop().unwrap();
+                    if let Value::Int(Wrapping(index)) = index_value {
+                        let array_value = self.operand_stack.pop().unwrap();
+                        match array_value {
+                            Value::Reference(array_rc) => {
+                                let component = array_rc.borrow().get(index);
+                                self.operand_stack.push(component);
+                            },
+                            Value::NullReference => panic!("NullPointerException"),
+                            _ => panic!("xaload instruction on primitive value"),
+                        }
+                    } else {
+                        panic!("xaload instruction on non-integer index");
+                    }
+                },
 
                 opcode::POP => {
                     self.operand_stack.pop();

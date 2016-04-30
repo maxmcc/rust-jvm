@@ -551,6 +551,18 @@ impl Object {
     }
 
     // TODO do something different with this
+    pub fn get(&self, index: i32) -> Value {
+        if let Object::Array { ref array, .. } = *self {
+            if index < 0 || (index as usize) >= array.len() {
+                panic!("ArrayIndexOutOfBoundsException")
+            }
+            array[index as usize].clone()
+        } else {
+            panic!("not an array")
+        }
+    }
+
+    // TODO do something different with this
     pub fn put(&mut self, index: i32, value: Value) {
         if let Object::Array { ref mut array, .. } = *self {
             if index < 0 || (index as usize) >= array.len() {
