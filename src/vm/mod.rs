@@ -5,7 +5,7 @@ pub mod constant_pool;
 pub mod frame;
 pub mod class;
 pub mod value;
-mod class_loader;
+pub mod class_loader;
 mod native_impl;
 
 /// References to unlinked structures from the runtime constant pool.

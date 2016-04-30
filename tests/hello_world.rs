@@ -3,8 +3,8 @@
 extern crate rust_jvm;
 extern crate nom;
 
-use self::rust_jvm::vm::{symref, ClassLoader};
-use self::rust_jvm::vm::sig;
+use self::rust_jvm::vm::{sig, symref};
+use self::rust_jvm::vm::class_loader::ClassLoader;
 use self::rust_jvm::vm::frame::Frame;
 
 #[test]
