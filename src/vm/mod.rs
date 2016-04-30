@@ -235,11 +235,19 @@ pub struct Class {
     field_constants: HashMap<sig::Field, constant_pool_index>,
     /// The methods of the class, mapped to their method structures.
     methods: HashMap<sig::Method, Method>,
-    /// A flag which is only set to `true` once this class has been initialized.
-    initialized: bool,
-    /// Once this class has been initialized, this map contains the current value for each `static`
-    /// field. Prior to initialization, the map is empty.
-    field_values: HashMap<sig::Field, Value>,
+    /// The values of the static fields of this class. These are only set at class initialization.
+    /// §5.5 of the JVM spec requires that initialization occur only at certain specific points,
+    /// in particular:
+    /// * When an instance of the class is created with the `new` instruction
+    /// * When one of the `getstatic`, `putstatic`, or `invokestatic` instructions refers to one
+    ///   of the static members of the class
+    /// * When a subclass of the class is initialized
+    /// * When the VM is about to begin executing the `main` method in the class containing the
+    ///   overall program entry point
+    /// Prior to initialization, this structure field contains `None`. After initialization, this
+    /// field contains a `Some` with a `HashMap` value, which must contain the current values for
+    /// each `static` field of this class.
+    field_values: RefCell<Option<HashMap<sig::Field, Value>>>,
 }
 
 impl Class {
@@ -278,8 +286,7 @@ impl Class {
             fields: fields,
             field_constants: field_constants,
             methods: methods,
-            initialized: false,
-            field_values: HashMap::new(),
+            field_values: RefCell::new(None),
         }
     }
 
@@ -302,8 +309,7 @@ impl Class {
             fields: fields,
             field_constants: HashMap::new(),
             methods: HashMap::new(),
-            initialized: false,
-            field_values: HashMap::new(),
+            field_values: RefCell::new(None),
         }
     }
 
@@ -359,68 +365,82 @@ impl Class {
         }
     }
 
-    fn initialize(&mut self, class_loader: &mut ClassLoader) {
-        if self.initialized {
-            return;
-        } else {
-            self.initialized = true;
-        }
+    fn initialize(&self, class_loader: &mut ClassLoader) {
+        // we don't want to have the RefCell borrowed during the initializer
+        // therefore, we borrow it in an inner scope and run the initializer later
+        let run_initializer = {
+            let mut field_values = self.field_values.borrow_mut();
+            match *field_values {
+                None => {
+                    let mut map = HashMap::new();
 
-        // initialize all static fields to their default values
-        for (sig, access_flags) in &self.fields {
-            if access_flags & access_flags::field_access_flags::ACC_STATIC != 0 {
-                let default_value = sig.ty.default_value();
-                self.field_values.insert(sig.clone(), default_value);
+                    // initialize all static fields to their default values
+                    for (sig, access_flags) in &self.fields {
+                        if access_flags & access_flags::field_access_flags::ACC_STATIC != 0 {
+                            let default_value = sig.ty.default_value();
+                            map.insert(sig.clone(), default_value);
+                        }
+                    }
+
+                    // initialize fields with a ConstantValue attribute to those constant values
+                    for (sig, index) in &self.field_constants {
+                        let value = self.constant_pool.resolve_literal(*index, class_loader).unwrap();
+                        map.insert(sig.clone(), value);
+                    }
+
+                    *field_values = Some(map);
+                    true
+                },
+
+                Some(_) => false,
             }
-        }
-
-        // initialize fields with a ConstantValue attribute to those constant values
-        for (sig, index) in &self.field_constants {
-            let value = self.constant_pool.resolve_literal(*index, class_loader).unwrap();
-            self.field_values.insert(sig.clone(), value);
-        }
-
-        // locate the class initializer method and execute it
-        let clinit_sig = sig::Method {
-            name: String::from("<clinit>"),
-            params: vec![],
-            return_ty: None,
         };
-        match self.methods.get(&clinit_sig) {
-            None => (),
-            Some(ref method) => {
-                let method_code = method.method_code.as_ref().unwrap();
-                let frame = Frame::new(&self, method_code, vec![]);
-                match frame.run(class_loader) {
-                    None => (),
-                    Some(_) => panic!("<clinit> returned a value!"),
-                }
-            },
-        };
+
+        if run_initializer {
+            let clinit_sig = sig::Method {
+                name: String::from("<clinit>"),
+                params: vec![],
+                return_ty: None,
+            };
+            match self.methods.get(&clinit_sig) {
+                None => (),
+                Some(ref method) => {
+                    let method_code = method.method_code.as_ref().unwrap();
+                    let frame = Frame::new(&self, method_code, vec![]);
+                    match frame.run(class_loader) {
+                        None => (),
+                        Some(_) => panic!("<clinit> returned a value!"),
+                    }
+                },
+            };
+        }
     }
 
-    pub fn resolve_and_get_field(&mut self, symref: &symref::Field, class_loader: &mut ClassLoader)
+    pub fn resolve_and_get_field(&self, symref: &symref::Field, class_loader: &mut ClassLoader)
             -> Value {
         self.initialize(class_loader);
         // TODO we're ignoring the superinterfaces
         // TODO: also not checking for static
-        let value_opt = self.field_values.get(&symref.sig).map(|v| v.clone());
+        let field_values_opt = self.field_values.borrow();
+        let field_values = field_values_opt.as_ref().unwrap();
+        let value_opt = field_values.get(&symref.sig).map(|v| v.clone());
         value_opt.unwrap_or_else(move || {
-            let mut superclass = self.superclass.as_ref().expect("NoSuchFieldError").clone();
-            Rc::get_mut(&mut superclass).unwrap().resolve_and_get_field(symref, class_loader)
+            let superclass = self.superclass.as_ref().expect("NoSuchFieldError");
+            superclass.resolve_and_get_field(symref, class_loader)
         })
     }
 
-    pub fn resolve_and_put_field(&mut self, symref: &symref::Field, new_value: Value,
+    pub fn resolve_and_put_field(&self, symref: &symref::Field, new_value: Value,
                                  class_loader: &mut ClassLoader) {
         self.initialize(class_loader);
         // TODO we're ignoring superinterfaces and not checking for static
-        if self.field_values.contains_key(&symref.sig) {
-            self.field_values.insert(symref.sig.clone(), new_value);
+        let mut field_values_opt = self.field_values.borrow_mut();
+        let mut field_values = field_values_opt.as_mut().unwrap();
+        if field_values.contains_key(&symref.sig) {
+            field_values.insert(symref.sig.clone(), new_value);
         } else {
-            let mut superclass = self.superclass.as_ref().expect("NoSuchFieldError").clone();
-            Rc::get_mut(&mut superclass).unwrap()
-                .resolve_and_put_field(symref, new_value, class_loader);
+            let superclass = self.superclass.as_ref().expect("NoSuchFieldError");
+            superclass.resolve_and_put_field(symref, new_value, class_loader);
         }
     }
 }

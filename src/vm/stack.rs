@@ -172,9 +172,8 @@ impl<'a> Frame<'a> {
                     let index = self.read_next_short();
                     if let Some(RuntimeConstantPoolEntry::FieldRef(ref symref)) =
                             self.current_class.get_constant_pool()[index] {
-                        let mut resolved_class = class_loader.resolve_class(&symref.class).unwrap();
-                        let value = Rc::get_mut(&mut resolved_class).unwrap()
-                                       .resolve_and_get_field(symref, class_loader);
+                        let resolved_class = class_loader.resolve_class(&symref.class).unwrap();
+                        let value = resolved_class.resolve_and_get_field(symref, class_loader);
                         self.operand_stack.push(value)
                     } else {
                         panic!("getstatic refers to non-field in constant pool");
@@ -185,10 +184,9 @@ impl<'a> Frame<'a> {
                     let index = self.read_next_short();
                     if let Some(RuntimeConstantPoolEntry::FieldRef(ref symref)) =
                             self.current_class.get_constant_pool()[index] {
-                        let mut resolved_class = class_loader.resolve_class(&symref.class).unwrap();
+                        let resolved_class = class_loader.resolve_class(&symref.class).unwrap();
                         let new_value = self.operand_stack.pop().unwrap();
-                        Rc::get_mut(&mut resolved_class).unwrap()
-                            .resolve_and_put_field(symref, new_value, class_loader);
+                        resolved_class.resolve_and_put_field(symref, new_value, class_loader);
                     } else {
                         panic!("putstatic refers to non-field in constant pool");
                     }
