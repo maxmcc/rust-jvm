@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::num::Wrapping;
 
 use model::class_file::access_flags::class_access_flags;
 
@@ -83,7 +83,7 @@ impl<'a> Frame<'a> {
         }
 
         macro_rules! do_ipush {
-            ($value: ident) => (self.operand_stack.push(Value::Int($value as i32)))
+            ($value: ident) => (self.operand_stack.push(Value::Int(Wrapping($value as i32))))
         }
 
         macro_rules! do_ldc {
@@ -99,15 +99,15 @@ impl<'a> Frame<'a> {
             match self.read_next_byte() {
                 opcode::NOP => (),
                 opcode::ACONST_NULL => self.operand_stack.push(Value::NullReference),
-                opcode::ICONST_M1 => self.operand_stack.push(Value::Int(-1)),
-                opcode::ICONST_0 => self.operand_stack.push(Value::Int(0)),
-                opcode::ICONST_1 => self.operand_stack.push(Value::Int(1)),
-                opcode::ICONST_2 => self.operand_stack.push(Value::Int(2)),
-                opcode::ICONST_3 => self.operand_stack.push(Value::Int(3)),
-                opcode::ICONST_4 => self.operand_stack.push(Value::Int(4)),
-                opcode::ICONST_5 => self.operand_stack.push(Value::Int(5)),
-                opcode::LCONST_0 => self.operand_stack.push(Value::Long(0)),
-                opcode::LCONST_1 => self.operand_stack.push(Value::Long(1)),
+                opcode::ICONST_M1 => self.operand_stack.push(Value::Int(Wrapping(-1))),
+                opcode::ICONST_0 => self.operand_stack.push(Value::Int(Wrapping(0))),
+                opcode::ICONST_1 => self.operand_stack.push(Value::Int(Wrapping(1))),
+                opcode::ICONST_2 => self.operand_stack.push(Value::Int(Wrapping(2))),
+                opcode::ICONST_3 => self.operand_stack.push(Value::Int(Wrapping(3))),
+                opcode::ICONST_4 => self.operand_stack.push(Value::Int(Wrapping(4))),
+                opcode::ICONST_5 => self.operand_stack.push(Value::Int(Wrapping(5))),
+                opcode::LCONST_0 => self.operand_stack.push(Value::Long(Wrapping(0))),
+                opcode::LCONST_1 => self.operand_stack.push(Value::Long(Wrapping(1))),
                 opcode::FCONST_0 => self.operand_stack.push(Value::Float(0.0)),
                 opcode::FCONST_1 => self.operand_stack.push(Value::Float(1.0)),
                 opcode::FCONST_2 => self.operand_stack.push(Value::Float(2.0)),

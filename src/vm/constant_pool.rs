@@ -1,3 +1,4 @@
+use std::num::Wrapping;
 use std::ops::Index;
 
 pub use model::class_file::constant_pool::constant_pool_index;
@@ -69,7 +70,7 @@ impl RuntimeConstantPool {
                 },
 
                 ConstantPoolInfo::Integer { bytes } => {
-                    let value = vm::Value::Int(bytes as i32);
+                    let value = vm::Value::Int(Wrapping(bytes as i32));
                     Some(RuntimeConstantPoolEntry::ResolvedLiteral(value))
                 },
 
@@ -80,7 +81,7 @@ impl RuntimeConstantPool {
 
                 ConstantPoolInfo::Long { high_bytes, low_bytes } => {
                     let bits = ((high_bytes as i64) << 32) & (low_bytes as i64);
-                    let value = vm::Value::Long(bits);
+                    let value = vm::Value::Long(Wrapping(bits));
                     Some(RuntimeConstantPoolEntry::ResolvedLiteral(value))
                 },
 

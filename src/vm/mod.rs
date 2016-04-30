@@ -7,7 +7,8 @@ pub mod heap;
 mod class_loader;
 
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
+use std::num::Wrapping;
 use std::rc::Rc;
 
 use util::one_indexed_vec::OneIndexedVec;
@@ -44,6 +45,7 @@ pub mod symref {
 
 /// Descriptors for things in the runtime constant pool.
 pub mod sig {
+    use std::num::Wrapping;
     use vm::Value;
 
     #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -114,10 +116,11 @@ pub mod sig {
 
         pub fn default_value(&self) -> Value {
             match *self {
-                Type::Byte | Type::Char | Type::Int | Type::Short | Type::Boolean => Value::Int(0),
+                Type::Byte | Type::Char | Type::Int | Type::Short | Type::Boolean =>
+                    Value::Int(Wrapping(0)),
                 Type::Double => Value::Double(0.0),
                 Type::Float => Value::Float(0.0),
-                Type::Long => Value::Long(0),
+                Type::Long => Value::Long(Wrapping(0)),
                 Type::Reference(_) => Value::NullReference,
             }
         }
@@ -198,11 +201,11 @@ pub mod sig {
 pub enum Value {
     /// A 32-bit signed integral type, representing the Java types `byte`, `char`, `short`, `int`,
     /// and `boolean`.
-    Int(i32),
+    Int(Wrapping<i32>),
     /// A 32-bit floating-point type, representing the Java type `float`.
     Float(f32),
     /// A 64-bit signed integral type, representing the Java type `long`.
-    Long(i64),
+    Long(Wrapping<i64>),
     /// A 64-bit floating-point type, representing the Java type `double`.
     Double(f64),
     /// A reference to a Java object in the heap.
