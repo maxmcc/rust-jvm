@@ -2,7 +2,7 @@
 
 pub mod bytecode;
 pub mod constant_pool;
-pub mod stack;
+pub mod frame;
 pub mod class;
 pub mod value;
 mod class_loader;

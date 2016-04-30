@@ -10,7 +10,7 @@ use util::one_indexed_vec::OneIndexedVec;
 use vm::{sig, symref};
 use vm::class_loader::ClassLoader;
 use vm::constant_pool::RuntimeConstantPool;
-use vm::stack::Frame;
+use vm::frame::Frame;
 use vm::value::Value;
 
 /// A JVM representation of a class that has been loaded.

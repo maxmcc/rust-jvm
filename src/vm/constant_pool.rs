@@ -8,7 +8,7 @@ use model::class_file::constant_pool::{ConstantPool, ConstantPoolInfo};
 use util::one_indexed_vec::OneIndexedVec;
 use vm::{sig, symref};
 use vm::class_loader::{self, ClassLoader};
-use vm::stack::Frame;
+use vm::frame::Frame;
 use vm::value::{Array, Scalar, Value};
 
 #[derive(Debug)]
