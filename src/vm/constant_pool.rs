@@ -182,9 +182,11 @@ impl RuntimeConstantPool {
                 let string = Scalar::new(string_class.clone());
                 let string_rc = Rc::new(RefCell::new(string));
 
+                // this is a package-private constructor that doesn't copy the array
                 let constructor_sig = sig::Method {
                     name: String::from("<init>"),
-                    params: vec![sig::Type::Reference(array_sig.clone())],
+                    params: vec![sig::Type::Int, sig::Type::Int,
+                                 sig::Type::Reference(array_sig.clone())],
                     return_ty: None,
                 };
                 let constructor_symref = symref::Method {
@@ -194,7 +196,9 @@ impl RuntimeConstantPool {
                 let constructor = string_class.resolve_method(&constructor_symref);
                 let constructor_code = constructor.method_code.as_ref().unwrap();
                 let args = vec![Some(Value::ScalarReference(string_rc.clone())),
-                                Some(Value::ArrayReference(array_rc))];
+                                Some(Value::Int(Wrapping(0))), // offset
+                                Some(Value::Int(Wrapping(i as i32))), // length
+                                Some(Value::ArrayReference(array_rc))]; // value
                 let frame = Frame::new(string_class.as_ref(), constructor_code, args);
                 frame.run(class_loader);
                 Ok(Value::ScalarReference(string_rc))
