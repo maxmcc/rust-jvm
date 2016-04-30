@@ -5,7 +5,7 @@ extern crate nom;
 
 use self::rust_jvm::vm::{symref, ClassLoader};
 use self::rust_jvm::vm::sig;
-use self::rust_jvm::vm::stack::Frame;
+use self::rust_jvm::vm::frame::Frame;
 
 #[test]
 fn test_hello_world() {
