@@ -8,9 +8,8 @@ extern crate log;
 #[macro_use]
 extern crate nom;
 
+pub mod logging;
 pub mod model;
 pub mod parser;
-pub mod vm;
 pub mod util;
-
-mod logging;
+pub mod vm;
