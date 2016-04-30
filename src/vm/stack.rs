@@ -104,6 +104,33 @@ impl<'a> Frame<'a> {
             })
         }
 
+        macro_rules! do_store {
+            ($index: expr) => ({
+                let value = self.operand_stack.pop().unwrap();
+                // invalidate the slot after this one if we're storing a category 2 operand
+                match value {
+                    Value::Int(_) | Value::Float(_) | Value::Reference(_) | Value::NullReference => (),
+                    Value::Long(_) | Value::Double(_) => {
+                        self.local_variables[($index + 1) as usize] = None;
+                    },
+                }
+                // actually store the local variable
+                self.local_variables[$index as usize] = Some(value);
+                // invalidate the slot before this one if it was formerly storing a category 2
+                // operand
+                let prev_index = $index - 1;
+                if prev_index > 0 {
+                    match self.local_variables[prev_index as usize] {
+                        None | Some(Value::Int(_)) | Some(Value::Float(_)) | Some(Value::Reference(_))
+                                | Some(Value::NullReference) => (),
+                        Some(Value::Long(_)) | Some(Value::Double(_)) => {
+                            self.local_variables[prev_index as usize] = None;
+                        },
+                    }
+                }
+            })
+        }
+
         loop {
             match self.read_next_byte() {
                 opcode::NOP => (),
@@ -157,6 +184,39 @@ impl<'a> Frame<'a> {
                         }
                     } else {
                         panic!("xaload instruction on non-integer index");
+                    }
+                },
+
+                // same thing here
+                opcode::ISTORE | opcode::LSTORE | opcode::FSTORE | opcode::DSTORE | opcode::ASTORE =>
+                    with!(read_next_byte, do_store),
+                opcode::ISTORE_0 | opcode::LSTORE_0 | opcode::FSTORE_0 | opcode::DSTORE_0
+                        | opcode::ASTORE_0 =>
+                    do_store!(0),
+                opcode::ISTORE_1 | opcode::LSTORE_1 | opcode::FSTORE_1 | opcode::DSTORE_1
+                        | opcode::ASTORE_1 =>
+                    do_store!(1),
+                opcode::ISTORE_2 | opcode::LSTORE_2 | opcode::FSTORE_2 | opcode::DSTORE_2
+                        | opcode::ASTORE_2 =>
+                    do_store!(2),
+                opcode::ISTORE_3 | opcode::LSTORE_3 | opcode::FSTORE_3 | opcode::DSTORE_3
+                        | opcode::ASTORE_3 =>
+                    do_store!(3),
+                opcode::IASTORE | opcode::LASTORE | opcode::FASTORE | opcode::DASTORE
+                        | opcode::AASTORE | opcode::BASTORE | opcode::CASTORE | opcode::SASTORE => {
+                    let value = self.operand_stack.pop().unwrap();
+                    let index_value = self.operand_stack.pop().unwrap();
+                    if let Value::Int(Wrapping(index)) = index_value {
+                        let array_value = self.operand_stack.pop().unwrap();
+                        match array_value {
+                            Value::Reference(array_rc) => {
+                                array_rc.borrow_mut().put(index, value);
+                            },
+                            Value::NullReference => panic!("NullPointerException"),
+                            _ => panic!("xastore instruction on primitive value"),
+                        }
+                    } else {
+                        panic!("xastore instruction on non-integer index");
                     }
                 },
 
