@@ -1,8 +1,10 @@
+use std::cell::RefCell;
 use std::num::Wrapping;
+use std::rc::Rc;
 
 use model::class_file::access_flags::class_access_flags;
 
-use vm::{Class, Method, MethodCode, Value};
+use vm::{Class, Method, MethodCode, Object, Value};
 use vm::class_loader::ClassLoader;
 use vm::constant_pool::{RuntimeConstantPoolEntry};
 use vm::bytecode::opcode;
@@ -271,6 +273,19 @@ impl<'a> Frame<'a> {
                         panic!("invokestatic refers to non-method in constant pool");
                     }
                 },
+
+                opcode::NEW => {
+                    let index = self.read_next_short();
+                    if let Some(RuntimeConstantPoolEntry::ClassRef(ref symref)) =
+                            self.current_class.get_constant_pool()[index] {
+                        // TODO proper error checking
+                        let resolved_class = class_loader.resolve_class(symref).unwrap();
+                        let object = Object::new(resolved_class);
+                        self.operand_stack.push(Value::Reference(Rc::new(RefCell::new(object))));
+                    } else {
+                        panic!("new refers to non-class in constant pool");
+                    }
+                }
 
                 _ => {
                     println!("{}", self.method_code.code[(self.pc as usize) - 1]);

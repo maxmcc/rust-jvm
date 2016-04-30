@@ -3,18 +3,16 @@
 pub mod bytecode;
 pub mod constant_pool;
 pub mod stack;
-pub mod heap;
 mod class_loader;
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::num::Wrapping;
 use std::rc::Rc;
 
 use util::one_indexed_vec::OneIndexedVec;
 
 pub use vm::constant_pool::RuntimeConstantPool;
-pub use vm::heap::Object;
 pub use vm::class_loader::ClassLoader;
 use vm::stack::Frame;
 use model::class_file::{constant_pool_index, ClassFile, MethodInfo};
@@ -316,6 +314,10 @@ impl Class {
         }
     }
 
+    pub fn get_symref(&self) -> symref::Class {
+        self.symref.clone()
+    }
+
     pub fn get_access_flags(&self) -> u16 {
         self.access_flags
     }
@@ -446,6 +448,18 @@ impl Class {
             superclass.resolve_and_put_field(symref, new_value, class_loader);
         }
     }
+
+    pub fn collect_instance_fields(&self) -> HashSet<sig::Field> {
+        let mut instance_fields = self.superclass.as_ref().map(|superclass| {
+            superclass.collect_instance_fields()
+        }).unwrap_or(HashSet::new());
+        for (sig, access_flags) in &self.fields {
+            if access_flags & access_flags::field_access_flags::ACC_STATIC == 0 {
+                instance_fields.insert(sig.clone());
+            }
+        }
+        instance_fields
+    }
 }
 
 #[derive(Debug)]
@@ -490,4 +504,37 @@ pub struct MethodCode {
     pub code: Vec<u8>,
     /// The method's exception table, used for catching `Throwable`s. Order is significant.
     pub exception_table: Vec<ExceptionTableEntry>,
+}
+
+#[derive(Debug)]
+pub enum Object {
+    Scalar { class: Rc<Class>, fields: HashMap<sig::Field, Value> },
+    Array { class: Rc<Class>, array: Vec<Value> },
+}
+
+impl Object {
+    pub fn new(class: Rc<Class>) -> Self {
+        match class.symref.sig {
+            sig::Class::Scalar(_) => {
+                let field_sigs = class.collect_instance_fields();
+                let mut fields = HashMap::new();
+                for sig in field_sigs {
+                    let value = sig.ty.default_value();
+                    fields.insert(sig, value);
+                }
+                Object::Scalar {
+                    class: class,
+                    fields: fields,
+                }
+            },
+            sig::Class::Array(_) => panic!("can't construct array without length"),
+        }
+    }
+
+    pub fn get_class(&self) -> Rc<Class> {
+        match *self {
+            Object::Scalar { ref class, .. } => class.clone(),
+            Object::Array { ref class, .. } => class.clone(),
+        }
+    }
 }
