@@ -8,7 +8,6 @@ use model::class_file::constant_pool::{ConstantPool, ConstantPoolInfo};
 use util::one_indexed_vec::OneIndexedVec;
 use vm::{sig, symref};
 use vm::class_loader::{self, ClassLoader};
-use vm::frame::Frame;
 use vm::value::{Array, Scalar, Value};
 
 #[derive(Debug)]
@@ -192,11 +191,13 @@ impl RuntimeConstantPool {
                     sig: constructor_sig,
                 };
                 let constructor = string_class.resolve_method(&constructor_symref);
-                let constructor_code = constructor.method_code.as_ref().unwrap();
-                let args = vec![Some(Value::ScalarReference(string_rc.clone())),
-                                Some(Value::ArrayReference(array_rc))];
-                let frame = Frame::new(string_class.as_ref(), constructor_code, args);
-                frame.run(class_loader);
+                let args = vec![Value::ScalarReference(string_rc.clone()),
+                                Value::ArrayReference(array_rc)];
+                let result = constructor.method_code.invoke(string_class.as_ref(), class_loader, args);
+                match result {
+                    None => (),
+                    Some(_) => panic!("<init> returned a value!"),
+                }
                 Ok(Value::ScalarReference(string_rc))
             },
             _ => panic!("expected literal constant pool entry"),

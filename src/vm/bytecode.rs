@@ -1,5 +1,6 @@
 //! The Java bytecode.
 
+#[allow(dead_code)]
 /// Opcodes for Java bytecode instructions.
 pub mod opcode {
     pub const NOP: u8 = 0x00;

@@ -1,12 +1,14 @@
 //! Structures for linked classes.
 
-pub mod bytecode;
-pub mod constant_pool;
-pub mod frame;
-pub mod class;
-pub mod value;
-pub mod class_loader;
-mod native_impl;
+mod bytecode;
+mod class;
+mod class_loader;
+mod constant_pool;
+mod frame;
+mod native;
+mod value;
+
+use self::class_loader::ClassLoader;
 
 /// References to unlinked structures from the runtime constant pool.
 pub mod symref {
@@ -179,6 +181,37 @@ pub mod sig {
                 return_ty: return_ty
             }
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct VirtualMachine {
+    bootstrap_class_loader: ClassLoader,
+}
+
+impl VirtualMachine {
+    pub fn new() -> Self {
+        VirtualMachine {
+            bootstrap_class_loader: ClassLoader::new(),
+        }
+    }
+
+    pub fn start(mut self, main_class: symref::Class) {
+        let class = self.bootstrap_class_loader.load_class(&main_class.sig).unwrap();
+        class.initialize(&mut self.bootstrap_class_loader);
+        let string_ty = sig::Type::Reference(sig::Class::Scalar(String::from("java/lang/String")));
+        let string_array_ty = sig::Type::Reference(sig::Class::Array(Box::new(string_ty)));
+        let main_sig = sig::Method {
+            name: String::from("main"),
+            params: vec![string_array_ty],
+            return_ty: None,
+        };
+        let main_symref = symref::Method {
+            class: main_class,
+            sig: main_sig,
+        };
+        let method = class.resolve_method(&main_symref);
+        method.method_code.invoke(&class, &mut self.bootstrap_class_loader, vec![]);
     }
 }
 

@@ -6,7 +6,7 @@ use model::class_file::access_flags::class_access_flags;
 
 use vm::{sig, symref};
 use vm::bytecode::opcode;
-use vm::class::{Class, Method, MethodCode};
+use vm::class::Class;
 use vm::class_loader::ClassLoader;
 use vm::constant_pool::RuntimeConstantPoolEntry;
 use vm::sig::Type;
@@ -18,8 +18,8 @@ use vm::value::{Array, Scalar, Value};
 pub struct Frame<'a> {
     /// A reference to the class containing the currently executing method.
     current_class: &'a Class,
-    /// Contains the bytecode currently executing in this frame, along with related structures.
-    method_code: &'a MethodCode,
+    /// The bytecode currently executing in this frame.
+    code: &'a [u8],
     /// The current program counter.
     pc: u16,
     /// The local variables of the current method.
@@ -31,11 +31,11 @@ pub struct Frame<'a> {
 }
 
 impl<'a> Frame<'a> {
-    pub fn new(current_class: &'a Class, method_code: &'a MethodCode,
+    pub fn new(current_class: &'a Class, code: &'a [u8],
                local_variables: Vec<Option<Value>>) -> Self {
         Frame {
             current_class: current_class,
-            method_code: method_code,
+            code: code,
             pc: 0,
             local_variables: local_variables,
             operand_stack: vec![],
@@ -43,7 +43,7 @@ impl<'a> Frame<'a> {
     }
 
     fn read_next_byte(&mut self) -> u8 {
-        let result = self.method_code.code[self.pc as usize];
+        let result = self.code[self.pc as usize];
         self.pc += 1;
         result
     }
@@ -52,31 +52,9 @@ impl<'a> Frame<'a> {
         ((self.read_next_byte() as u16) << 8) | (self.read_next_byte() as u16)
     }
 
-    fn pop_as_locals(&mut self, count: usize) -> Vec<Option<Value>> {
-        let mut result = vec![];
+    fn pop_multi(&mut self, count: usize) -> Vec<Value> {
         let start_index = self.operand_stack.len() - count;
-        for value in self.operand_stack.split_at(start_index).1 {
-            result.push(Some(value.clone()));
-            match *value {
-                Value::Long(_) | Value::Double(_) => result.push(None),
-                _ => (),
-            }
-        }
-        result
-    }
-
-    fn invoke(&mut self, class_loader: &mut ClassLoader, class: &Class, method: &Method,
-              args: Vec<Option<Value>>) {
-        match method.method_code {
-            None => (),
-            Some(ref method_code) => {
-                let frame = Frame::new(class, method_code, args);
-                match frame.run(class_loader) {
-                    None => (),
-                    Some(return_value) => self.operand_stack.push(return_value)
-                }
-            }
-        }
+        self.operand_stack.drain(start_index..).collect()
     }
 
     pub fn run(mut self, class_loader: &mut ClassLoader) -> Option<Value> {
@@ -345,22 +323,28 @@ impl<'a> Frame<'a> {
                         // TODO: check for <clinit> and <init>
                         // TODO: check protected accesses
                         let num_args = symref.sig.params.len();
-                        let args = self.pop_as_locals(num_args + 1);
+                        let args = self.pop_multi(num_args + 1);
                         let object_class = {
                             let object_value = &args[0];
                             match *object_value {
-                                Some(Value::ScalarReference(ref scalar_rc)) =>
+                                Value::ScalarReference(ref scalar_rc) =>
                                     scalar_rc.borrow().get_class().clone(),
-                                Some(Value::ArrayReference(ref array_rc)) =>
+                                Value::ArrayReference(ref array_rc) =>
                                     array_rc.borrow().get_class().clone(),
-                                Some(Value::NullReference) => panic!("NullPointerException"),
+                                Value::NullReference => panic!("NullPointerException"),
                                 _ => panic!("invokevirtual on a primitive type"),
                             }
                         };
                         match object_class.dispatch_method(resolved_method) {
                             None => panic!("AbstractMethodError"),
-                            Some((actual_class, actual_method)) =>
-                                self.invoke(class_loader, actual_class, actual_method, args),
+                            Some((actual_class, actual_method)) => {
+                                let result = actual_method.method_code.invoke(
+                                        actual_class, class_loader, args);
+                                match result {
+                                    None => (),
+                                    Some(value) => self.operand_stack.push(value),
+                                }
+                            },
                         }
                     } else {
                         panic!("invokevirtual refers to non-method in constant pool");
@@ -377,7 +361,7 @@ impl<'a> Frame<'a> {
                         // TODO: check protected accesses
                         // TODO: lots of other checks here too
                         let num_args = symref.sig.params.len();
-                        let args = self.pop_as_locals(num_args + 1);
+                        let args = self.pop_multi(num_args + 1);
 
                         // check the three conditions from the spec
                         let actual_method = {
@@ -392,7 +376,12 @@ impl<'a> Frame<'a> {
                             }
                         };
                         let actual_class = class_loader.resolve_class(&actual_method.symref.class).unwrap();
-                        self.invoke(class_loader, actual_class.as_ref(), actual_method, args)
+                        let result = actual_method.method_code.invoke(
+                                actual_class.as_ref(), class_loader, args);
+                        match result {
+                            None => (),
+                            Some(value) => self.operand_stack.push(value),
+                        }
                     } else {
                         panic!("invokespecial refers to non-method in constant pool");
                     }
@@ -408,8 +397,13 @@ impl<'a> Frame<'a> {
                         // TODO: check protected accesses
                         // TODO: lots of other checks here too
                         let num_args = symref.sig.params.len();
-                        let args = self.pop_as_locals(num_args);
-                        self.invoke(class_loader, resolved_class.as_ref(), resolved_method, args);
+                        let args = self.pop_multi(num_args);
+                        let result = resolved_method.method_code.invoke(
+                                resolved_class.as_ref(), class_loader, args);
+                        match result {
+                            None => (),
+                            Some(value) => self.operand_stack.push(value),
+                        }
                     } else {
                         panic!("invokestatic refers to non-method in constant pool");
                     }
@@ -419,8 +413,9 @@ impl<'a> Frame<'a> {
                     let index = self.read_next_short();
                     if let Some(RuntimeConstantPoolEntry::ClassRef(ref symref)) =
                             self.current_class.get_constant_pool()[index] {
-                        // TODO proper error checking
+                        // TODO check for interfaces, abstract classes
                         let resolved_class = class_loader.resolve_class(symref).unwrap();
+                        resolved_class.initialize(class_loader);
                         let object = Scalar::new(resolved_class);
                         let object_rc = Rc::new(RefCell::new(object));
                         self.operand_stack.push(Value::ScalarReference(object_rc));
@@ -468,7 +463,7 @@ impl<'a> Frame<'a> {
                 },
 
                 _ => {
-                    println!("{}", self.method_code.code[(self.pc as usize) - 1]);
+                    println!("{}", self.code[(self.pc as usize) - 1]);
                     panic!("undefined or reserved opcode")
                 },
             }

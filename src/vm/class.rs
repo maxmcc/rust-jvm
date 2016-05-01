@@ -7,7 +7,7 @@ use std::rc::Rc;
 use model::class_file::{access_flags, ClassFile, constant_pool_index, MethodInfo};
 use model::class_file::attribute::{AttributeInfo, ExceptionTableEntry};
 use util::one_indexed_vec::OneIndexedVec;
-use vm::{sig, symref};
+use vm::{native, sig, symref};
 use vm::class_loader::ClassLoader;
 use vm::constant_pool::RuntimeConstantPool;
 use vm::frame::Frame;
@@ -171,7 +171,7 @@ impl Class {
         }
     }
 
-    fn initialize(&self, class_loader: &mut ClassLoader) {
+    pub fn initialize(&self, class_loader: &mut ClassLoader) {
         // we don't want to have the RefCell borrowed during the initializer
         // therefore, we borrow it in an inner scope and run the initializer later
         let run_initializer = {
@@ -211,9 +211,8 @@ impl Class {
             match self.methods.get(&clinit_sig) {
                 None => (),
                 Some(ref method) => {
-                    let method_code = method.method_code.as_ref().unwrap();
-                    let frame = Frame::new(&self, method_code, vec![]);
-                    match frame.run(class_loader) {
+                    let result = method.method_code.invoke(&self, class_loader, vec![]);
+                    match result {
                         None => (),
                         Some(_) => panic!("<clinit> returned a value!"),
                     }
@@ -270,41 +269,83 @@ pub struct Method {
     pub symref: symref::Method,
     /// The method's access flags.
     pub access_flags: u16,
-    /// An optional MethodCode structure. Not present for abstract and native methods.
-    pub method_code: Option<MethodCode>,
+    /// A `MethodCode` variant, which is used to actually invoke the method.
+    pub method_code: MethodCode,
 }
 
 impl Method {
     pub fn new(symref: symref::Method, method_info: MethodInfo) -> Self {
-        for attribute_info in method_info.attributes {
-            match attribute_info {
-                AttributeInfo::Code { code, exception_table, .. } => {
-                    return Method {
-                        symref: symref,
-                        access_flags: method_info.access_flags,
-                        method_code: Some(MethodCode {
-                            code: code,
-                            exception_table: exception_table,
-                        }),
-                    }
-                },
-                _ => (),
+        let method_code = {
+            if method_info.access_flags & access_flags::method_access_flags::ACC_NATIVE != 0 {
+                match native::bind(&symref) {
+                    None => MethodCode::NativeNotFound,
+                    Some(native_method) => MethodCode::Native(native_method),
+                }
+            } else if method_info.access_flags & access_flags::method_access_flags::ACC_ABSTRACT != 0 {
+                MethodCode::Abstract
+            } else {
+                method_info.attributes.into_iter().fold(None, |method_code, attribute_info| {
+                    method_code.or(
+                        match attribute_info {
+                            AttributeInfo::Code { code, exception_table, .. } => {
+                                Some(MethodCode::Concrete {
+                                    code: code,
+                                    exception_table: exception_table,
+                                })
+                            },
+                            _ => None,
+                        }
+                    )
+                }).unwrap()
             }
-        }
-
+        };
         Method {
             symref: symref,
             access_flags: method_info.access_flags,
-            method_code: None,
+            method_code: method_code,
         }
     }
 }
 
+/// A representation of the code associated with a method, or more generally, the action that
+/// should be taken when a method is invoked.
 #[derive(Debug)]
-/// Code associated with a JVM method struct.
-pub struct MethodCode {
-    /// The method's bytecode instructions.
-    pub code: Vec<u8>,
-    /// The method's exception table, used for catching `Throwable`s. Order is significant.
-    pub exception_table: Vec<ExceptionTableEntry>,
+pub enum MethodCode {
+    /// The code for a non-`abstract`, non-`native` Java method. Such contains executable bytecode
+    /// which may be used to create a new JVM stack frame.
+    Concrete { code: Vec<u8>, exception_table: Vec<ExceptionTableEntry>, },
+    /// to invoke an `abstract` method fails with `AbstractMethodError`.
+    Abstract,
+    /// The code for a `native` Java method for which the class loader has located a corresponding
+    /// Rust function pointer.
+    Native(native::NativeMethod),
+    /// The code for a `native` Java method for which the class loader failed to locate a Rust
+    /// function pointer.
+    NativeNotFound,
+}
+
+impl MethodCode {
+    pub fn invoke(&self, class: &Class, class_loader: &mut ClassLoader,
+                  args: Vec<Value>) -> Option<Value> {
+        match *self {
+            MethodCode::Concrete { ref code, .. } => {
+                let mut aligned_args = vec![];
+                for value in args {
+                    let realign = match value {
+                        Value::Long(_) | Value::Double(_) => true,
+                        _ => false,
+                    };
+                    aligned_args.push(Some(value));
+                    if realign {
+                        aligned_args.push(None);
+                    }
+                }
+                let frame = Frame::new(class, code, aligned_args);
+                frame.run(class_loader)
+            },
+            MethodCode::Abstract => panic!("AbstractMethodError"),
+            MethodCode::Native(ref native_method) => native_method.invoke(args),
+            MethodCode::NativeNotFound => panic!("UnsatisfiedLinkError"),
+        }
+    }
 }
