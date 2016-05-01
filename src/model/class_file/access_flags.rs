@@ -1,3 +1,6 @@
+//! Access flags for various structures in
+//! [§4.1](https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.1).
+
 #[allow(non_camel_case_types)]
 pub type u2 = super::u2;
 

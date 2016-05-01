@@ -1,3 +1,6 @@
+//! Contains structures to describe the constant pool
+//! [§4.4](https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.4).
+
 use util::one_indexed_vec::OneIndexedVec;
 
 use super::u1;
@@ -7,6 +10,8 @@ use super::u4;
 #[allow(non_camel_case_types)]
 pub type constant_pool_index = u2;
 
+/// Values of constant pool tags [Table
+/// 4.4-A](https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.4-140).
 pub mod tags {
     use super::super::u1;
     pub const CLASS: u1 = 7;
@@ -25,6 +30,8 @@ pub mod tags {
     pub const INVOKE_DYNAMIC: u1 = 18;
 }
 
+/// Type-safe representation of constant pool tags [Table
+/// 4.4-A](https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.4-140).
 #[derive(Debug, PartialEq)]
 pub enum Tag {
     Class,
@@ -129,6 +136,8 @@ pub enum MethodReference {
 
 #[derive(Debug, PartialEq)]
 pub enum ConstantPoolInfo {
+    /// The `CONSTANT_Class_info` structure
+    /// [§4.4.1](https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.4.1).
     Class { name_index: constant_pool_index },
     FieldRef { class_index: constant_pool_index, name_and_type_index: constant_pool_index },
     MethodRef { class_index: constant_pool_index, name_and_type_index: constant_pool_index },
@@ -188,6 +197,8 @@ impl ConstantPoolInfo {
     }
 }
 
+//! The constant pool
+//! [§4.4](https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.4).
 pub type ConstantPool = OneIndexedVec<ConstantPoolInfo>;
 
 impl ConstantPool {

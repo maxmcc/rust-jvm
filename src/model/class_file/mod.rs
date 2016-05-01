@@ -1,5 +1,5 @@
-//! Structures for the [Java SE 8 JVM class file
-//! format](https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html).
+//! The `ClassFile` structure of
+//! [§4.1](https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.1).
 
 pub mod access_flags;
 pub mod attribute;
