@@ -197,8 +197,8 @@ impl ConstantPoolInfo {
     }
 }
 
-//! The constant pool
-//! [§4.4](https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.4).
+/// The constant pool
+/// [§4.4](https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.4).
 pub type ConstantPool = OneIndexedVec<ConstantPoolInfo>;
 
 impl ConstantPool {
