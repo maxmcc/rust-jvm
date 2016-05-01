@@ -1,3 +1,15 @@
+//! The runtime state of a method that is currently executing in the virtual machine.
+//!
+//! Each thread in the Java virtual machine has a _runtime stack_ comprised of _frames_. A new
+//! frame is pushed onto the stack each time a method is invoked. Frames are removed from the stack
+//! either when the method of the current stack frame returns, or when an unhandled exception
+//! causes abrupt completion of the method (causing stack unwinding).
+//!
+//! Every stack frame has an array of bytecode instructions and a _program counter_ which define
+//! its execution. It also maintains a fixed number of _local variables_ and an _operand stack_.
+//! The operand stack is the central focus of the Java machine bytecode, and is directly
+//! manipulated by the bytecode instructions (in lieu of registers).
+
 use std::cell::RefCell;
 use std::num::Wrapping;
 use std::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Rem, Sub};
@@ -58,6 +70,9 @@ impl<'a> Frame<'a> {
         self.operand_stack.drain(start_index..).collect()
     }
 
+    /// Execute the method associated with this stack frame in the context of the currrent class
+    /// loader, and return a result if there is one. This method may create new stack frames as a
+    /// result of evaluating `invoke*` instructions.
     pub fn run(mut self, class_loader: &mut ClassLoader) -> Option<Value> {
         macro_rules! pop {
             () => (self.operand_stack.pop().unwrap());
