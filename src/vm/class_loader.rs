@@ -93,7 +93,7 @@ impl ClassLoader {
     fn find_class_bytes(&mut self, name: &str) -> Result<Vec<u8>, io::Error> {
         // isn't this so convenient!
         // FIXME: Set up classpath for find_class_bytes
-        let file_name = String::from(name) + ".class";
+        let file_name = String::from("rt/") + name + ".class";
         File::open(file_name).and_then(|mut file| {
             let mut res = vec![];
             file.read_to_end(&mut res).map(|_| res)
@@ -138,7 +138,7 @@ impl ClassLoader {
             }
         );
         try!(
-            if parsed_class.major_version > 52 || parsed_class.minor_version != 0 {
+            if parsed_class.major_version != 50 || parsed_class.minor_version != 0 {
                 Err(Error::UnsupportedVersion {
                     major: parsed_class.major_version,
                     minor: parsed_class.minor_version,

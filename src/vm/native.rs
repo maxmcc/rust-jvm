@@ -1,4 +1,6 @@
 use std::fmt;
+use std::io;
+use std::io::Write;
 use std::num::Wrapping;
 
 use vm::{sig, symref};
@@ -17,8 +19,6 @@ impl NativeMethod {
         self.0(args)
     }
 }
-
-const NOP: &'static Fn(Vec<Value>) -> Option<Value> = &(|_| None);
 
 const ARRAYCOPY: &'static Fn(Vec<Value>) -> Option<Value> = &(|args| {
     if let Value::ArrayReference(ref src_rc) = args[0] {
@@ -50,21 +50,38 @@ const ARRAYCOPY: &'static Fn(Vec<Value>) -> Option<Value> = &(|args| {
     None
 });
 
+const WRITE: &'static Fn(Vec<Value>) -> Option<Value> = &(|args| {
+    if let Value::ArrayReference(ref b_rc) = args[0] {
+        if let Value::Int(Wrapping(off)) = args[1] {
+            if let Value::Int(Wrapping(len)) = args[2] {
+                let b = b_rc.borrow();
+                let mut bytes = vec![];
+                for i in 0..len {
+                    // TODO error condition is probably not right here
+                    let value = b.get(off + i);
+                    if let Value::Int(Wrapping(byte)) = value {
+                        bytes.push(byte as u8);
+                    } else {
+                        panic!("bad value");
+                    }
+                }
+                io::stdout().write_all(&bytes).expect("IOException");
+                None
+            } else {
+                panic!("len must be an int")
+            }
+        } else {
+            panic!("off must be an int")
+        }
+    } else {
+        panic!("b must be an array")
+    }
+});
+
 pub fn bind(symref: &symref::Method) -> Option<NativeMethod> {
     let system_symref = symref::Class {
         sig: sig::Class::Scalar(String::from("java/lang/System")),
     };
-
-    let register_natives_sig = sig::Method {
-        name: String::from("registerNatives"),
-        params: vec![],
-        return_ty: None,
-    };
-    let register_natives_symref = symref::Method {
-        class: system_symref.clone(),
-        sig: register_natives_sig,
-    };
-
     let object_ty = sig::Type::Reference(sig::Class::Scalar(String::from("java/lang/Object")));
     let arraycopy_sig = sig::Method {
         name: String::from("arraycopy"),
@@ -77,10 +94,24 @@ pub fn bind(symref: &symref::Method) -> Option<NativeMethod> {
         sig: arraycopy_sig,
     };
 
-    if *symref == register_natives_symref {
-        Some(NativeMethod(NOP))
-    } else if *symref == arraycopy_symref {
+    let stdout_symref = symref::Class {
+        sig: sig::Class::Scalar(String::from("moon/RustStdout")),
+    };
+    let byte_array_ty = sig::Type::Reference(sig::Class::Array(Box::new(sig::Type::Byte)));
+    let write_sig = sig::Method {
+        name: String::from("write"),
+        params: vec![byte_array_ty, sig::Type::Int, sig::Type::Int],
+        return_ty: None,
+    };
+    let write_symref = symref::Method {
+        class: stdout_symref.clone(),
+        sig: write_sig,
+    };
+
+    if *symref == arraycopy_symref {
         Some(NativeMethod(ARRAYCOPY))
+    } else if *symref == write_symref {
+        Some(NativeMethod(WRITE))
     } else {
         None
     }

@@ -1,7 +1,12 @@
+package moon;
+
 import java.io.IOException;
 import java.io.OutputStream;
 
-final class RustStdout extends OutputStream {
+public final class RustStdout extends OutputStream {
+    public RustStdout() {
+    }
+
     @Override
     public void write(int b) throws IOException {
         byte[] arr = new byte[1];
@@ -11,7 +16,4 @@ final class RustStdout extends OutputStream {
 
     @Override
     public native void write(byte[] b, int off, int len) throws IOException;
-
-    private RustStdout() {
-    }
 }
