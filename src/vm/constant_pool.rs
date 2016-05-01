@@ -203,7 +203,7 @@ impl RuntimeConstantPool {
                 let constructor = string_class.resolve_method(&constructor_symref);
                 let args = vec![Value::ScalarReference(string_rc.clone()),
                                 Value::ArrayReference(array_rc)];
-                let result = constructor.method_code.invoke(string_class.as_ref(), class_loader, args);
+                let result = constructor.invoke(string_class.as_ref(), class_loader, args);
                 match result {
                     None => (),
                     Some(_) => panic!("<init> returned a value!"),

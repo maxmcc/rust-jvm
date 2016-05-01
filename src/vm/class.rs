@@ -222,7 +222,7 @@ impl Class {
             match self.methods.get(&clinit_sig) {
                 None => (),
                 Some(ref method) => {
-                    let result = method.method_code.invoke(&self, class_loader, vec![]);
+                    let result = method.invoke(&self, class_loader, vec![]);
                     match result {
                         None => (),
                         Some(_) => panic!("<clinit> returned a value!"),
@@ -286,7 +286,7 @@ pub struct Method {
     /// The method's access flags.
     pub access_flags: u16,
     /// A `MethodCode` variant, which is used to actually invoke the method.
-    pub method_code: MethodCode,
+    code: MethodCode,
 }
 
 impl Method {
@@ -318,32 +318,13 @@ impl Method {
         Method {
             symref: symref,
             access_flags: method_info.access_flags,
-            method_code: method_code,
+            code: method_code,
         }
     }
-}
 
-/// A representation of the code associated with a method, or more generally, the action that
-/// should be taken when a method is invoked.
-#[derive(Debug)]
-pub enum MethodCode {
-    /// The code for a non-`abstract`, non-`native` Java method. Such contains executable bytecode
-    /// which may be used to create a new JVM stack frame.
-    Concrete { code: Vec<u8>, exception_table: Vec<ExceptionTableEntry>, },
-    /// to invoke an `abstract` method fails with `AbstractMethodError`.
-    Abstract,
-    /// The code for a `native` Java method for which the class loader has located a corresponding
-    /// Rust function pointer.
-    Native(native::NativeMethod),
-    /// The code for a `native` Java method for which the class loader failed to locate a Rust
-    /// function pointer.
-    NativeNotFound,
-}
-
-impl MethodCode {
     pub fn invoke(&self, class: &Class, class_loader: &mut ClassLoader,
                   args: Vec<Value>) -> Option<Value> {
-        match *self {
+        match self.code {
             MethodCode::Concrete { ref code, .. } => {
                 let mut aligned_args = vec![];
                 for value in args {
@@ -366,3 +347,19 @@ impl MethodCode {
     }
 }
 
+/// A representation of the code associated with a method, or more generally, the action that
+/// should be taken when a method is invoked.
+#[derive(Debug)]
+enum MethodCode {
+    /// The code for a non-`abstract`, non-`native` Java method. Such contains executable bytecode
+    /// which may be used to create a new JVM stack frame.
+    Concrete { code: Vec<u8>, exception_table: Vec<ExceptionTableEntry>, },
+    /// to invoke an `abstract` method fails with `AbstractMethodError`.
+    Abstract,
+    /// The code for a `native` Java method for which the class loader has located a corresponding
+    /// Rust function pointer.
+    Native(native::NativeMethod),
+    /// The code for a `native` Java method for which the class loader failed to locate a Rust
+    /// function pointer.
+    NativeNotFound,
+}

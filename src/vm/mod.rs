@@ -211,7 +211,7 @@ impl VirtualMachine {
             sig: main_sig,
         };
         let method = class.resolve_method(&main_symref);
-        method.method_code.invoke(&class, &mut self.bootstrap_class_loader, vec![]);
+        method.invoke(&class, &mut self.bootstrap_class_loader, vec![]);
     }
 }
 

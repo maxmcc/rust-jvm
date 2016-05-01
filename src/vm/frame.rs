@@ -410,8 +410,7 @@ impl<'a> Frame<'a> {
                         match object_class.dispatch_method(resolved_method) {
                             None => panic!("AbstractMethodError"),
                             Some((actual_class, actual_method)) => {
-                                let result = actual_method.method_code.invoke(
-                                        actual_class, class_loader, args);
+                                let result = actual_method.invoke(actual_class, class_loader, args);
                                 match result {
                                     None => (),
                                     Some(value) => self.operand_stack.push(value),
@@ -448,8 +447,8 @@ impl<'a> Frame<'a> {
                             }
                         };
                         let actual_class = class_loader.resolve_class(&actual_method.symref.class).unwrap();
-                        let result = actual_method.method_code.invoke(
-                                actual_class.as_ref(), class_loader, args);
+                        let result = actual_method.invoke(actual_class.as_ref(), class_loader,
+                                args);
                         match result {
                             None => (),
                             Some(value) => self.operand_stack.push(value),
@@ -470,8 +469,8 @@ impl<'a> Frame<'a> {
                         // TODO: lots of other checks here too
                         let num_args = symref.sig.params.len();
                         let args = self.pop_multi(num_args);
-                        let result = resolved_method.method_code.invoke(
-                                resolved_class.as_ref(), class_loader, args);
+                        let result = resolved_method.invoke(resolved_class.as_ref(), class_loader,
+                                args);
                         match result {
                             None => (),
                             Some(value) => self.operand_stack.push(value),
