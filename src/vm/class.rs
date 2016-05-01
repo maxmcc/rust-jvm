@@ -303,8 +303,9 @@ impl Method {
                 method_info.attributes.into_iter().fold(None, |method_code, attribute_info| {
                     method_code.or(
                         match attribute_info {
-                            AttributeInfo::Code { code, exception_table, .. } => {
+                            AttributeInfo::Code { max_locals, code, exception_table, .. } => {
                                 Some(MethodCode::Concrete {
+                                    max_locals: max_locals,
                                     code: code,
                                     exception_table: exception_table,
                                 })
@@ -324,26 +325,32 @@ impl Method {
 
     pub fn invoke(&self, class: &Class, class_loader: &mut ClassLoader,
                   args: Vec<Value>) -> Option<Value> {
-        match self.code {
-            MethodCode::Concrete { ref code, .. } => {
-                let mut aligned_args = vec![];
+        println!("Starting to invoke {:?}", self);
+        let result = match self.code {
+            MethodCode::Concrete { max_locals, ref code, .. } => {
+                let mut locals = Vec::with_capacity(max_locals as usize);
                 for value in args {
                     let realign = match value {
                         Value::Long(_) | Value::Double(_) => true,
                         _ => false,
                     };
-                    aligned_args.push(Some(value));
+                    locals.push(Some(value));
                     if realign {
-                        aligned_args.push(None);
+                        locals.push(None);
                     }
                 }
-                let frame = Frame::new(class, code, aligned_args);
+                while locals.len() < max_locals as usize {
+                    locals.push(None)
+                }
+                let frame = Frame::new(class, code, locals);
                 frame.run(class_loader)
             },
             MethodCode::Abstract => panic!("AbstractMethodError"),
             MethodCode::Native(ref native_method) => native_method.invoke(args),
             MethodCode::NativeNotFound => panic!("UnsatisfiedLinkError"),
-        }
+        };
+        println!("Finished invoking {:?}", self);
+        result
     }
 }
 
@@ -353,7 +360,7 @@ impl Method {
 enum MethodCode {
     /// The code for a non-`abstract`, non-`native` Java method. Such contains executable bytecode
     /// which may be used to create a new JVM stack frame.
-    Concrete { code: Vec<u8>, exception_table: Vec<ExceptionTableEntry>, },
+    Concrete { max_locals: u16, code: Vec<u8>, exception_table: Vec<ExceptionTableEntry>, },
     /// to invoke an `abstract` method fails with `AbstractMethodError`.
     Abstract,
     /// The code for a `native` Java method for which the class loader has located a corresponding
