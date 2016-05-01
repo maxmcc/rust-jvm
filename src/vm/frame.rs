@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::num::Wrapping;
+use std::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Rem, Sub};
 use std::rc::Rc;
 
 use model::class_file::access_flags::class_access_flags;
@@ -155,6 +156,27 @@ impl<'a> Frame<'a> {
             })
         }
 
+        macro_rules! do_binop {
+            ($value_variant: path, $binop: expr) => ({
+                let v2 = pop!($value_variant);
+                let v1 = pop!($value_variant);
+                push!($value_variant($binop(v1, v2)));
+            });
+        }
+
+        macro_rules! do_if_icmp {
+            ($cmp_op: expr) => ({
+                let branch_offset = self.read_next_short() as i16;
+                let i2 = pop!(Value::Int);
+                let i1 = pop!(Value::Int);
+                if $cmp_op(&i1, &i2) {
+                    // 3 byte long instruction; read* operations move the PC.
+                    let this_pc_start = self.pc - 3;
+                    self.pc = (this_pc_start as i32 + branch_offset as i32) as u16
+                }
+            });
+        }
+
         loop {
             match self.read_next_byte() {
                 opcode::NOP => (),
@@ -280,54 +302,67 @@ impl<'a> Frame<'a> {
                     push!(v2);
                 },
 
-                opcode::IADD => push!(Value::Int(pop!(Value::Int) + pop!(Value::Int))),
-                opcode::LADD => push!(Value::Long(pop!(Value::Long) + pop!(Value::Long))),
-                opcode::FADD => push!(Value::Float(pop!(Value::Float) + pop!(Value::Float))),
-                opcode::DADD => push!(Value::Double(pop!(Value::Double) + pop!(Value::Double))),
-                opcode::ISUB => push!(Value::Int(pop!(Value::Int) - pop!(Value::Int))),
-                opcode::LSUB => push!(Value::Long(pop!(Value::Long) - pop!(Value::Long))),
-                opcode::FSUB => push!(Value::Float(pop!(Value::Float) - pop!(Value::Float))),
-                opcode::DSUB => push!(Value::Double(pop!(Value::Double) - pop!(Value::Double))),
-                opcode::IMUL => push!(Value::Int(pop!(Value::Int) * pop!(Value::Int))),
-                opcode::LMUL => push!(Value::Long(pop!(Value::Long) * pop!(Value::Long))),
-                opcode::FMUL => push!(Value::Float(pop!(Value::Float) * pop!(Value::Float))),
-                opcode::DMUL => push!(Value::Double(pop!(Value::Double) * pop!(Value::Double))),
-                opcode::IDIV => push!(Value::Int(pop!(Value::Int) / pop!(Value::Int))),
-                opcode::LDIV => push!(Value::Long(pop!(Value::Long) / pop!(Value::Long))),
-                opcode::FDIV => push!(Value::Float(pop!(Value::Float) / pop!(Value::Float))),
-                opcode::DDIV => push!(Value::Double(pop!(Value::Double) / pop!(Value::Double))),
-                opcode::IREM => push!(Value::Int(pop!(Value::Int) % pop!(Value::Int))),
-                opcode::LREM => push!(Value::Long(pop!(Value::Long) % pop!(Value::Long))),
-                opcode::FREM => push!(Value::Float(pop!(Value::Float) % pop!(Value::Float))),
-                opcode::DREM => push!(Value::Double(pop!(Value::Double) % pop!(Value::Double))),
-                opcode::INEG => push!(Value::Int(!pop!(Value::Int)+ Wrapping(1))),
+                opcode::IADD => do_binop!(Value::Int, Wrapping::<i32>::add),
+                opcode::LADD => do_binop!(Value::Long, Wrapping::<i64>::add),
+                opcode::FADD => do_binop!(Value::Float, f32::add),
+                opcode::DADD => do_binop!(Value::Double, f64::add),
+                opcode::ISUB => do_binop!(Value::Int, Wrapping::<i32>::sub),
+                opcode::LSUB => do_binop!(Value::Long, Wrapping::<i64>::sub),
+                opcode::FSUB => do_binop!(Value::Float, f32::sub),
+                opcode::DSUB => do_binop!(Value::Double, f64::sub),
+                opcode::IMUL => do_binop!(Value::Int, Wrapping::<i32>::mul),
+                opcode::LMUL => do_binop!(Value::Long, Wrapping::<i64>::mul),
+                opcode::FMUL => do_binop!(Value::Float, f32::mul),
+                opcode::DMUL => do_binop!(Value::Double, f64::mul),
+                opcode::IDIV => do_binop!(Value::Int, Wrapping::<i32>::div),
+                opcode::LDIV => do_binop!(Value::Long, Wrapping::<i64>::div),
+                opcode::FDIV => do_binop!(Value::Float, f32::div),
+                opcode::DDIV => do_binop!(Value::Double, f64::div),
+                opcode::IREM => do_binop!(Value::Int, Wrapping::<i32>::rem),
+                opcode::LREM => do_binop!(Value::Long, Wrapping::<i64>::rem),
+                opcode::FREM => do_binop!(Value::Float, f32::rem),
+                opcode::DREM => do_binop!(Value::Double, f64::rem),
+                // Issue #33037: Neg is missing for Wrapping
+                opcode::INEG => push!(Value::Int(!pop!(Value::Int) + Wrapping(1))),
                 opcode::LNEG => push!(Value::Long(!pop!(Value::Long) + Wrapping(1))),
                 opcode::FNEG => push!(Value::Float(-pop!(Value::Float))),
                 opcode::DNEG => push!(Value::Double(-pop!(Value::Double))),
-                opcode::ISHL => push!(Value::Int(
-                    pop!(Value::Int) << ((pop!(Value::Int).0 & 0x1F) as usize))),
-                opcode::LSHL => push!(Value::Long(
-                    pop!(Value::Long) << ((pop!(Value::Int).0 & 0x3F) as usize))),
-                opcode::ISHR => push!(Value::Int(
-                    pop!(Value::Int) >> ((pop!(Value::Int).0 & 0x1F) as usize))),
-                opcode::LSHR => push!(Value::Long(
-                    pop!(Value::Long) >> ((pop!(Value::Int).0 & 0x3F) as usize))),
+                opcode::ISHL => {
+                    let Wrapping(s) = pop!(Value::Int);
+                    let v = pop!(Value::Int);
+                    push!(Value::Int(v << (s & 0x1F) as usize));
+                }
+                opcode::LSHL => {
+                    let Wrapping(s) = pop!(Value::Int);
+                    let v = pop!(Value::Long);
+                    push!(Value::Long(v << (s & 0x3F) as usize));
+                }
+                opcode::ISHR => {
+                    let Wrapping(s) = pop!(Value::Int);
+                    let v = pop!(Value::Int);
+                    push!(Value::Int(v >> (s & 0x1F) as usize));
+                }
+                opcode::LSHR => {
+                    let Wrapping(s) = pop!(Value::Int);
+                    let v = pop!(Value::Long);
+                    push!(Value::Long(v >> (s & 0x3F) as usize));
+                }
                 opcode::IUSHR => {
-                    let v = pop!(Value::Int).0 as u32;
                     let s = (pop!(Value::Int).0 & 0x1F) as usize;
+                    let v = pop!(Value::Int).0 as u32;
                     push!(Value::Int(Wrapping((v >> s) as i32)))
                 },
                 opcode::LUSHR => {
-                    let v = pop!(Value::Long).0 as u64;
                     let s = (pop!(Value::Int).0 & 0x3F) as usize;
+                    let v = pop!(Value::Long).0 as u64;
                     push!(Value::Long(Wrapping((v >> s) as i64)))
                 },
-                opcode::IAND => push!(Value::Int(pop!(Value::Int) & pop!(Value::Int))),
-                opcode::LAND => push!(Value::Long(pop!(Value::Long) & pop!(Value::Long))),
-                opcode::IOR => push!(Value::Int(pop!(Value::Int) | pop!(Value::Int))),
-                opcode::LOR => push!(Value::Long(pop!(Value::Long) | pop!(Value::Long))),
-                opcode::IXOR => push!(Value::Int(pop!(Value::Int) ^ pop!(Value::Int))),
-                opcode::LXOR => push!(Value::Long(pop!(Value::Long) ^ pop!(Value::Long))),
+                opcode::IAND => do_binop!(Value::Int, Wrapping::<i32>::bitand),
+                opcode::LAND => do_binop!(Value::Long, Wrapping::<i64>::bitand),
+                opcode::IOR => do_binop!(Value::Int, Wrapping::<i32>::bitor),
+                opcode::LOR => do_binop!(Value::Long, Wrapping::<i64>::bitor),
+                opcode::IXOR => do_binop!(Value::Int, Wrapping::<i32>::bitxor),
+                opcode::LXOR => do_binop!(Value::Long, Wrapping::<i64>::bitxor),
                 opcode::IINC => {
                     let index = self.read_next_byte();
                     let c = self.read_next_byte() as i8 as i32;
@@ -338,28 +373,17 @@ impl<'a> Frame<'a> {
                     }
                 },
 
-                // TODO write a macro for this
-                opcode::IF_ICMPGT => {
-                    let branch_offset = self.read_next_short() as i16;
-                    let value2 = self.operand_stack.pop();
-                    if let Some(Value::Int(i2)) = value2 {
-                        let value1 = self.operand_stack.pop();
-                        if let Some(Value::Int(i1)) = value1 {
-                            if i1 > i2 {
-                                self.pc -= 3;
-                                self.pc = ((self.pc as i32) + (branch_offset as i32)) as u16
-                            }
-                        } else {
-                            panic!("if_icmpgt on non-int");
-                        }
-                    } else {
-                        panic!("if_icmpgt on non-int");
-                    }
-                },
+                opcode::IF_ICMPEQ => do_if_icmp!(Wrapping::<i32>::eq),
+                opcode::IF_ICMPNE => do_if_icmp!(Wrapping::<i32>::ne),
+                opcode::IF_ICMPLT => do_if_icmp!(Wrapping::<i32>::lt),
+                opcode::IF_ICMPGT => do_if_icmp!(Wrapping::<i32>::gt),
+                opcode::IF_ICMPGE => do_if_icmp!(Wrapping::<i32>::ge),
+                opcode::IF_ICMPLE => do_if_icmp!(Wrapping::<i32>::le),
+
                 opcode::GOTO => {
                     let branch_offset = self.read_next_short() as i16;
-                    self.pc -= 3;
-                    self.pc = ((self.pc as i32) + (branch_offset as i32)) as u16;
+                    let this_pc_start = self.pc - 3;
+                    self.pc = (this_pc_start as i32 + branch_offset as i32) as u16;
                 },
 
                 opcode::IRETURN | opcode::LRETURN | opcode::FRETURN | opcode::DRETURN
