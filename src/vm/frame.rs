@@ -58,6 +58,48 @@ impl<'a> Frame<'a> {
     }
 
     pub fn run(mut self, class_loader: &mut ClassLoader) -> Option<Value> {
+        macro_rules! pop {
+            () => (self.operand_stack.pop().unwrap());
+            ($value_variant: path) => ({
+                match pop!() {
+                    $value_variant(v) => v,
+                    v => panic!("Expected to pop a value of type {}, but was {:?}",
+                                stringify!($value_variant), v),
+                }
+            });
+        }
+
+        macro_rules! pop_not_null {
+            () => ({
+                match pop!() {
+                    Value::NullReference => panic!(
+                        "NullPointerException: expected {} but was null",
+                        stringify!($value_variant)),
+                    v => v,
+                }
+            });
+            ($value_variant: path) => ({
+                match pop!() {
+                    Value::NullReference => panic!(
+                        "NullPointerException: expected {} but was null",
+                        stringify!($value_variant)),
+                    $value_variant(v) => v,
+                    v => panic!("Expected to pop a value of type {}, but was {:?}",
+                                stringify!($value_variant), v),
+                }
+            });
+        }
+
+        macro_rules! push {
+            ($v: expr) => ({
+                let v = $v;     // satisfy the borrow checker
+                self.operand_stack.push(v);
+            });
+            ($($vs: expr),*) => ({
+                self.operand_stack.extend_from_slice(&[$($vs),*])
+            })
+        }
+
         macro_rules! with {
             ($read_next_action: ident, $k: ident) => ({
                 let value = self.$read_next_action() as u16;
@@ -110,48 +152,6 @@ impl<'a> Frame<'a> {
                         },
                     }
                 }
-            })
-        }
-
-        macro_rules! pop {
-            () => (self.operand_stack.pop().unwrap());
-            ($value_variant: path) => ({
-                match pop!() {
-                    $value_variant(v) => v,
-                    v => panic!("Expected to pop a value of type {}, but was {:?}",
-                                stringify!($value_variant), v),
-                }
-            });
-        }
-
-        macro_rules! pop_not_null {
-            () => ({
-                match pop!() {
-                    Value::NullReference => panic!(
-                        "NullPointerException: expected {} but was null",
-                        stringify!($value_variant)),
-                    v => v,
-                }
-            });
-            ($value_variant: path) => ({
-                match pop!() {
-                    Value::NullReference => panic!(
-                        "NullPointerException: expected {} but was null",
-                        stringify!($value_variant)),
-                    $value_variant(v) => v,
-                    v => panic!("Expected to pop a value of type {}, but was {:?}",
-                                stringify!($value_variant), v),
-                }
-            });
-        }
-
-        macro_rules! push {
-            ($v: expr) => ({
-                let v = $v;     // satisfy the borrow checker
-                self.operand_stack.push(v);
-            });
-            ($($vs: expr),*) => ({
-                self.operand_stack.extend_from_slice(&[$($vs),*])
             })
         }
 
@@ -281,47 +281,62 @@ impl<'a> Frame<'a> {
                 },
 
                 opcode::IADD => push!(Value::Int(pop!(Value::Int) + pop!(Value::Int))),
-
-/*
-    pub const IADD: u8 = 0x60;
-    pub const LADD: u8 = 0x61;
-    pub const FADD: u8 = 0x62;
-    pub const DADD: u8 = 0x63;
-    pub const ISUB: u8 = 0x64;
-    pub const LSUB: u8 = 0x65;
-    pub const FSUB: u8 = 0x66;
-    pub const DSUB: u8 = 0x67;
-    pub const IMUL: u8 = 0x68;
-    pub const LMUL: u8 = 0x69;
-    pub const FMUL: u8 = 0x6a;
-    pub const DMUL: u8 = 0x6b;
-    pub const IDIV: u8 = 0x6c;
-    pub const LDIV: u8 = 0x6d;
-    pub const FDIV: u8 = 0x6e;
-    pub const DDIV: u8 = 0x6f;
-    pub const IREM: u8 = 0x70;
-    pub const LREM: u8 = 0x71;
-    pub const FREM: u8 = 0x72;
-    pub const DREM: u8 = 0x73;
-    pub const INEG: u8 = 0x74;
-    pub const LNEG: u8 = 0x75;
-    pub const FNEG: u8 = 0x76;
-    pub const DNEG: u8 = 0x77;
-    pub const ISHL: u8 = 0x78;
-    pub const LSHL: u8 = 0x79;
-    pub const ISHR: u8 = 0x7a;
-    pub const LSHR: u8 = 0x7b;
-    pub const IUSHR: u8 = 0x7c;
-    pub const LUSHR: u8 = 0x7d;
-    pub const IAND: u8 = 0x7e;
-    pub const LAND: u8 = 0x7f;
-    pub const IOR: u8 = 0x80;
-    pub const LOR: u8 = 0x81;
-    pub const IXOR: u8 = 0x82;
-    pub const LXOR: u8 = 0x83;
-    pub const IINC: u8 = 0x84;
-
-*/
+                opcode::LADD => push!(Value::Long(pop!(Value::Long) + pop!(Value::Long))),
+                opcode::FADD => push!(Value::Float(pop!(Value::Float) + pop!(Value::Float))),
+                opcode::DADD => push!(Value::Double(pop!(Value::Double) + pop!(Value::Double))),
+                opcode::ISUB => push!(Value::Int(pop!(Value::Int) - pop!(Value::Int))),
+                opcode::LSUB => push!(Value::Long(pop!(Value::Long) - pop!(Value::Long))),
+                opcode::FSUB => push!(Value::Float(pop!(Value::Float) - pop!(Value::Float))),
+                opcode::DSUB => push!(Value::Double(pop!(Value::Double) - pop!(Value::Double))),
+                opcode::IMUL => push!(Value::Int(pop!(Value::Int) * pop!(Value::Int))),
+                opcode::LMUL => push!(Value::Long(pop!(Value::Long) * pop!(Value::Long))),
+                opcode::FMUL => push!(Value::Float(pop!(Value::Float) * pop!(Value::Float))),
+                opcode::DMUL => push!(Value::Double(pop!(Value::Double) * pop!(Value::Double))),
+                opcode::IDIV => push!(Value::Int(pop!(Value::Int) / pop!(Value::Int))),
+                opcode::LDIV => push!(Value::Long(pop!(Value::Long) / pop!(Value::Long))),
+                opcode::FDIV => push!(Value::Float(pop!(Value::Float) / pop!(Value::Float))),
+                opcode::DDIV => push!(Value::Double(pop!(Value::Double) / pop!(Value::Double))),
+                opcode::IREM => push!(Value::Int(pop!(Value::Int) % pop!(Value::Int))),
+                opcode::LREM => push!(Value::Long(pop!(Value::Long) % pop!(Value::Long))),
+                opcode::FREM => push!(Value::Float(pop!(Value::Float) % pop!(Value::Float))),
+                opcode::DREM => push!(Value::Double(pop!(Value::Double) % pop!(Value::Double))),
+                opcode::INEG => push!(Value::Int(!pop!(Value::Int)+ Wrapping(1))),
+                opcode::LNEG => push!(Value::Long(!pop!(Value::Long) + Wrapping(1))),
+                opcode::FNEG => push!(Value::Float(-pop!(Value::Float))),
+                opcode::DNEG => push!(Value::Double(-pop!(Value::Double))),
+                opcode::ISHL => push!(Value::Int(
+                    pop!(Value::Int) << ((pop!(Value::Int).0 & 0x1F) as usize))),
+                opcode::LSHL => push!(Value::Long(
+                    pop!(Value::Long) << ((pop!(Value::Int).0 & 0x3F) as usize))),
+                opcode::ISHR => push!(Value::Int(
+                    pop!(Value::Int) >> ((pop!(Value::Int).0 & 0x1F) as usize))),
+                opcode::LSHR => push!(Value::Long(
+                    pop!(Value::Long) >> ((pop!(Value::Int).0 & 0x3F) as usize))),
+                opcode::IUSHR => {
+                    let v = pop!(Value::Int).0 as u32;
+                    let s = (pop!(Value::Int).0 & 0x1F) as usize;
+                    push!(Value::Int(Wrapping((v >> s) as i32)))
+                },
+                opcode::LUSHR => {
+                    let v = pop!(Value::Long).0 as u64;
+                    let s = (pop!(Value::Int).0 & 0x3F) as usize;
+                    push!(Value::Long(Wrapping((v >> s) as i64)))
+                },
+                opcode::IAND => push!(Value::Int(pop!(Value::Int) & pop!(Value::Int))),
+                opcode::LAND => push!(Value::Long(pop!(Value::Long) & pop!(Value::Long))),
+                opcode::IOR => push!(Value::Int(pop!(Value::Int) | pop!(Value::Int))),
+                opcode::LOR => push!(Value::Long(pop!(Value::Long) | pop!(Value::Long))),
+                opcode::IXOR => push!(Value::Int(pop!(Value::Int) ^ pop!(Value::Int))),
+                opcode::LXOR => push!(Value::Long(pop!(Value::Long) ^ pop!(Value::Long))),
+                opcode::IINC => {
+                    let index = self.read_next_byte();
+                    let c = self.read_next_byte() as i8 as i32;
+                    match self.local_variables[index as usize] {
+                        Some(Value::Int(ref mut v)) => *v += Wrapping(c),
+                        Some(ref v) => panic!("IINC: Expected an int, but was {:?}", v),
+                        None => panic!("IINC: Not a local variable at index {}", index),
+                    }
+                },
 
                 opcode::RETURN => return None,
 
