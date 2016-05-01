@@ -224,10 +224,20 @@ impl<'a> Frame<'a> {
             ($pred: expr) => ({
                 let branch_offset = self.read_next_short() as i16;
                 let x = pop!(Value::Int);
-                if $pred(x) {
+                if $pred(&x, &Wrapping(0)) {
                     // 3 byte long instruction; read* operations move the PC.
                     let this_pc_start = self.pc - 3;
                     self.pc = (this_pc_start as i32 + branch_offset as i32) as u16
+                }
+            });
+        }
+
+        macro_rules! map_top {
+            ($pat: pat, $result: expr) => ({
+                match pop!() {
+                    $pat => push!($result),
+                    v => panic!("Expected to pop a value of type {}, but was {:?}",
+                                stringify!($pat), v),
                 }
             });
         }
@@ -427,6 +437,29 @@ impl<'a> Frame<'a> {
                         None => panic!("IINC: Not a local variable at index {}", index),
                     }
                 },
+
+                opcode::I2L => map_top!(Value::Int(Wrapping(n)), Value::Long(Wrapping(n as i64))),
+                opcode::I2F => map_top!(Value::Int(Wrapping(n)), Value::Float(n as f32)),
+                opcode::I2D => map_top!(Value::Int(Wrapping(n)), Value::Double(n as f64)),
+                opcode::L2I => map_top!(Value::Long(Wrapping(n)), Value::Int(Wrapping(n as i32))),
+                opcode::L2F => map_top!(Value::Long(Wrapping(n)), Value::Float(n as f32)),
+                opcode::L2D => map_top!(Value::Long(Wrapping(n)), Value::Double(n as f64)),
+                opcode::F2I => map_top!(Value::Float(n), Value::Int(Wrapping(n as i32))),
+                opcode::F2L => map_top!(Value::Float(n), Value::Long(Wrapping(n as i64))),
+                opcode::F2D => map_top!(Value::Float(n), Value::Double(n as f64)),
+                opcode::D2I => map_top!(Value::Double(n), Value::Int(Wrapping(n as i32))),
+                opcode::D2L => map_top!(Value::Double(n), Value::Long(Wrapping(n as i64))),
+                opcode::D2F => map_top!(Value::Double(n), Value::Float(n as f32)),
+                opcode::I2B => map_top!(Value::Int(Wrapping(n)), Value::Int(Wrapping(n as i8 as i32))),
+                opcode::I2C => map_top!(Value::Int(Wrapping(n)), Value::Int(Wrapping(n as u16 as i32))),
+                opcode::I2S => map_top!(Value::Int(Wrapping(n)), Value::Int(Wrapping(n as i16 as i32))),
+
+                opcode::IFEQ => do_if_int!(Wrapping::<i32>::eq),
+                opcode::IFNE => do_if_int!(Wrapping::<i32>::ne),
+                opcode::IFLT => do_if_int!(Wrapping::<i32>::lt),
+                opcode::IFGE => do_if_int!(Wrapping::<i32>::ge),
+                opcode::IFGT => do_if_int!(Wrapping::<i32>::gt),
+                opcode::IFLE => do_if_int!(Wrapping::<i32>::le),
 
                 opcode::IF_ICMPEQ => do_if_icmp!(Wrapping::<i32>::eq),
                 opcode::IF_ICMPNE => do_if_icmp!(Wrapping::<i32>::ne),
@@ -649,6 +682,7 @@ impl<'a> Frame<'a> {
                 },
 
                 // TODO
+
                 opcode::IFNULL => {
                     let branch_offset = self.read_next_short() as i16;
                     if let Value::NullReference = pop!() {
