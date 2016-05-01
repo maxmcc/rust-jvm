@@ -240,7 +240,7 @@ impl<'a> Frame<'a> {
                 opcode::LDC => with!(read_next_byte, do_ldc),
                 opcode::LDC_W | opcode::LDC2_W => with!(read_next_short, do_ldc),
 
-                // these are a little out of order, since we combine identical cases
+                // these are a little out of order in order to combine similar cases
                 opcode::ILOAD | opcode::LLOAD | opcode::FLOAD | opcode::DLOAD | opcode::ALOAD =>
                     with!(read_next_byte, do_load),
                 opcode::ILOAD_0 | opcode::LLOAD_0 | opcode::FLOAD_0 | opcode::DLOAD_0
@@ -287,7 +287,6 @@ impl<'a> Frame<'a> {
                 opcode::POP => {
                     pop!();
                 },
-
                 opcode::POP2 => {
                     match pop!() {
                         Value::Long(_) | Value::Double(_) => (),
@@ -297,7 +296,6 @@ impl<'a> Frame<'a> {
                     }
                 },
                 opcode::DUP => {
-                    // TODO make this a macro
                     let value = self.operand_stack.last().unwrap().clone();
                     push!(value);
                 },
@@ -305,7 +303,6 @@ impl<'a> Frame<'a> {
                     let value1 = pop!();
                     let value2 = pop!();
 
-                    // TODO: make this a macro
                     push!(value1.clone(), value2, value1);
                 },
                 opcode::DUP_X2 => {
@@ -333,6 +330,8 @@ impl<'a> Frame<'a> {
                         },
                     }
                 },
+                opcode::DUP2_X1 => unimplemented!(),
+                opcode::DUP2_X2 => unimplemented!(),
 
                 opcode::SWAP => {
                     // both values need to be category 1
@@ -493,6 +492,12 @@ impl<'a> Frame<'a> {
                     let this_pc_start = self.pc - 3;
                     self.pc = (this_pc_start as i32 + branch_offset as i32) as u16;
                 },
+
+                opcode::JSR => unimplemented!(),
+                opcode::RET => unimplemented!(),
+
+                opcode::TABLESWITCH => unimplemented!(),
+                opcode::LOOKUPSWITCH => unimplemented!(),
 
                 opcode::IRETURN | opcode::LRETURN | opcode::FRETURN | opcode::DRETURN
                         | opcode::ARETURN => return self.operand_stack.pop(),
@@ -695,13 +700,21 @@ impl<'a> Frame<'a> {
                     }
                 },
 
+                opcode::ANEWARRAY => unimplemented!(),
+
                 opcode::ARRAYLENGTH => {
                     let array_rc = pop_not_null!(Value::ArrayReference);
                     let len = array_rc.borrow().len();
                     push!(Value::Int(Wrapping(len)));
                 },
 
-                // TODO
+                opcode::ATHROW => unimplemented!(),
+                opcode::CHECKCAST => unimplemented!(),
+                opcode::INSTANCEOF => unimplemented!(),
+                opcode::MONITORENTER => unimplemented!(),
+                opcode::MONITOREXIT => unimplemented!(),
+                opcode::WIDE => unimplemented!(),
+                opcode::MULTIANEWARRAY => unimplemented!(),
 
                 opcode::IFNULL => {
                     let branch_offset = self.read_next_short() as i16;
@@ -722,11 +735,17 @@ impl<'a> Frame<'a> {
                     }
                 },
 
-                // TODO
+                opcode::GOTO_W => unimplemented!(),
+                opcode::JSR_W => unimplemented!(),
+
+                // reserved opcodes
+                opcode::BREAKPOINT => unimplemented!(),
+                opcode::IMPDEP1 => unimplemented!(),
+                opcode::IMPDEP2 => unimplemented!(),
 
                 _ => {
                     println!("{}", self.code[(self.pc as usize) - 1]);
-                    panic!("unknown or reserved opcode")
+                    panic!("unknown opcode")
                 },
             }
         }
