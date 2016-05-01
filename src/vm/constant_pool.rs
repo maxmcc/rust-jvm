@@ -1,22 +1,32 @@
+//! The runtime constant pool
+
 use std::cell::RefCell;
 use std::num::Wrapping;
 use std::ops::Index;
 use std::rc::Rc;
 
-pub use model::class_file::constant_pool::constant_pool_index;
 use model::class_file::constant_pool::{ConstantPool, ConstantPoolInfo};
 use util::one_indexed_vec::OneIndexedVec;
 use vm::{sig, symref};
 use vm::class_loader::{self, ClassLoader};
 use vm::value::{Array, Scalar, Value};
 
+pub use model::class_file::constant_pool::constant_pool_index;
+
 #[derive(Debug)]
+/// An constant value in the runtime constant pool.
 pub enum RuntimeConstantPoolEntry {
+    /// A symbolic reference to a class.
     ClassRef(symref::Class),
+    /// A symbolic reference to a method.
     MethodRef(symref::Method),
+    /// A symbolic reference to an object field.
     FieldRef(symref::Field),
+    /// A literal value that has undergone resolution.
     ResolvedLiteral(Value),
+    /// An unresolved reference to a modified UTF-8 string in the constant pool.
     UnresolvedString(constant_pool_index),
+    /// A resolved modified UTF-8 string value.
     StringValue(ModifiedUtf8String),
 }
 

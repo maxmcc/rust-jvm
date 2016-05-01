@@ -66,22 +66,21 @@ impl<'a> Frame<'a> {
         }
 
         macro_rules! do_ipush {
-            ($value: ident) => (self.operand_stack.push(Value::Int(Wrapping($value as i32))))
+            ($value: ident) => (push!(Value::Int(Wrapping($value as i32))))
         }
 
         macro_rules! do_ldc {
             ($index: ident) => ({
-                // TODO: should use resolve_literal
                 let value = self.current_class.get_constant_pool()
-                                .resolve_literal($index, class_loader).unwrap();
-                self.operand_stack.push(value);
+                    .resolve_literal($index, class_loader).unwrap();
+                push!(value);
             });
         }
 
         macro_rules! do_load {
             ($index: expr) => ({
                 let value = self.local_variables[$index as usize].clone().unwrap();
-                self.operand_stack.push(value);
+                push!(value);
             })
         }
 
@@ -114,24 +113,66 @@ impl<'a> Frame<'a> {
             })
         }
 
+        macro_rules! pop {
+            () => (self.operand_stack.pop().unwrap());
+            ($value_variant: path) => ({
+                match pop!() {
+                    $value_variant(v) => v,
+                    v => panic!("Expected to pop a value of type {}, but was {:?}",
+                                stringify!($value_variant), v),
+                }
+            });
+        }
+
+        macro_rules! pop_not_null {
+            () => ({
+                match pop!() {
+                    Value::NullReference => panic!(
+                        "NullPointerException: expected {} but was null",
+                        stringify!($value_variant)),
+                    v => v,
+                }
+            });
+            ($value_variant: path) => ({
+                match pop!() {
+                    Value::NullReference => panic!(
+                        "NullPointerException: expected {} but was null",
+                        stringify!($value_variant)),
+                    $value_variant(v) => v,
+                    v => panic!("Expected to pop a value of type {}, but was {:?}",
+                                stringify!($value_variant), v),
+                }
+            });
+        }
+
+        macro_rules! push {
+            ($v: expr) => ({
+                let v = $v;     // satisfy the borrow checker
+                self.operand_stack.push(v);
+            });
+            ($($vs: expr),*) => ({
+                self.operand_stack.extend_from_slice(&[$($vs),*])
+            })
+        }
+
         loop {
             match self.read_next_byte() {
                 opcode::NOP => (),
-                opcode::ACONST_NULL => self.operand_stack.push(Value::NullReference),
-                opcode::ICONST_M1 => self.operand_stack.push(Value::Int(Wrapping(-1))),
-                opcode::ICONST_0 => self.operand_stack.push(Value::Int(Wrapping(0))),
-                opcode::ICONST_1 => self.operand_stack.push(Value::Int(Wrapping(1))),
-                opcode::ICONST_2 => self.operand_stack.push(Value::Int(Wrapping(2))),
-                opcode::ICONST_3 => self.operand_stack.push(Value::Int(Wrapping(3))),
-                opcode::ICONST_4 => self.operand_stack.push(Value::Int(Wrapping(4))),
-                opcode::ICONST_5 => self.operand_stack.push(Value::Int(Wrapping(5))),
-                opcode::LCONST_0 => self.operand_stack.push(Value::Long(Wrapping(0))),
-                opcode::LCONST_1 => self.operand_stack.push(Value::Long(Wrapping(1))),
-                opcode::FCONST_0 => self.operand_stack.push(Value::Float(0.0)),
-                opcode::FCONST_1 => self.operand_stack.push(Value::Float(1.0)),
-                opcode::FCONST_2 => self.operand_stack.push(Value::Float(2.0)),
-                opcode::DCONST_0 => self.operand_stack.push(Value::Double(0.0)),
-                opcode::DCONST_1 => self.operand_stack.push(Value::Double(1.0)),
+                opcode::ACONST_NULL => push!(Value::NullReference),
+                opcode::ICONST_M1 => push!(Value::Int(Wrapping(-1))),
+                opcode::ICONST_0 => push!(Value::Int(Wrapping(0))),
+                opcode::ICONST_1 => push!(Value::Int(Wrapping(1))),
+                opcode::ICONST_2 => push!(Value::Int(Wrapping(2))),
+                opcode::ICONST_3 => push!(Value::Int(Wrapping(3))),
+                opcode::ICONST_4 => push!(Value::Int(Wrapping(4))),
+                opcode::ICONST_5 => push!(Value::Int(Wrapping(5))),
+                opcode::LCONST_0 => push!(Value::Long(Wrapping(0))),
+                opcode::LCONST_1 => push!(Value::Long(Wrapping(1))),
+                opcode::FCONST_0 => push!(Value::Float(0.0)),
+                opcode::FCONST_1 => push!(Value::Float(1.0)),
+                opcode::FCONST_2 => push!(Value::Float(2.0)),
+                opcode::DCONST_0 => push!(Value::Double(0.0)),
+                opcode::DCONST_1 => push!(Value::Double(1.0)),
                 opcode::BIPUSH => with!(read_next_byte, do_ipush),
                 opcode::SIPUSH => with!(read_next_short, do_ipush),
                 opcode::LDC => with!(read_next_byte, do_ldc),
@@ -154,20 +195,9 @@ impl<'a> Frame<'a> {
                     do_load!(3),
                 opcode::IALOAD | opcode::LALOAD | opcode::FALOAD | opcode::DALOAD
                         | opcode::AALOAD | opcode::BALOAD | opcode::CALOAD | opcode::SALOAD => {
-                    let index_value = self.operand_stack.pop().unwrap();
-                    if let Value::Int(Wrapping(index)) = index_value {
-                        let array_value = self.operand_stack.pop().unwrap();
-                        match array_value {
-                            Value::ArrayReference(array_rc) => {
-                                let component = array_rc.borrow().get(index);
-                                self.operand_stack.push(component);
-                            },
-                            Value::NullReference => panic!("NullPointerException"),
-                            _ => panic!("xaload instruction on non-array value"),
-                        }
-                    } else {
-                        panic!("xaload instruction on non-integer index");
-                    }
+                    let Wrapping(index) = pop!(Value::Int);
+                    let array_rc = pop_not_null!(Value::ArrayReference);
+                    push!(array_rc.borrow_mut().get(index));
                 },
 
                 // same thing here
@@ -185,71 +215,113 @@ impl<'a> Frame<'a> {
                 opcode::ISTORE_3 | opcode::LSTORE_3 | opcode::FSTORE_3 | opcode::DSTORE_3
                         | opcode::ASTORE_3 =>
                     do_store!(3),
-                opcode::IASTORE | opcode::LASTORE | opcode::FASTORE | opcode::DASTORE
-                        | opcode::AASTORE | opcode::BASTORE | opcode::CASTORE | opcode::SASTORE => {
-                    let value = self.operand_stack.pop().unwrap();
-                    let index_value = self.operand_stack.pop().unwrap();
-                    if let Value::Int(Wrapping(index)) = index_value {
-                        let array_value = self.operand_stack.pop().unwrap();
-                        match array_value {
-                            Value::ArrayReference(array_rc) => {
-                                array_rc.borrow_mut().put(index, value);
-                            },
-                            Value::NullReference => panic!("NullPointerException"),
-                            _ => panic!("xastore instruction on non-array value"),
-                        }
-                    } else {
-                        panic!("xastore instruction on non-integer index");
-                    }
+                opcode::IASTORE | opcode::LASTORE | opcode::FASTORE | opcode::DASTORE | opcode::AASTORE | opcode::BASTORE | opcode::CASTORE | opcode::SASTORE => {
+                    let value = pop!();
+                    let Wrapping(index) = pop!(Value::Int);
+                    let array_rc = pop_not_null!(Value::ArrayReference);
+                    array_rc.borrow_mut().put(index, value);
                 },
 
                 opcode::POP => {
-                    self.operand_stack.pop();
+                    pop!();
                 },
+
                 opcode::POP2 => {
-                    match self.operand_stack.pop() {
-                        Some(Value::Long(_)) | Some(Value::Double(_)) => (),
+                    match pop!() {
+                        Value::Long(_) | Value::Double(_) => (),
                         _ => {
-                            self.operand_stack.pop();
-                        },
+                            pop!();
+                        }
                     }
                 },
                 opcode::DUP => {
+                    // TODO make this a macro
                     let value = self.operand_stack.last().unwrap().clone();
-                    self.operand_stack.push(value);
+                    push!(value);
                 },
                 opcode::DUP_X1 => {
-                    let value1 = self.operand_stack.pop().unwrap();
-                    let value2 = self.operand_stack.pop().unwrap();
-                    self.operand_stack.extend_from_slice(&[value1.clone(), value2, value1]);
+                    let value1 = pop!();
+                    let value2 = pop!();
+
+                    // TODO: make this a macro
+                    push!(value1.clone(), value2, value1);
                 },
                 opcode::DUP_X2 => {
-                    let value1 = self.operand_stack.pop().unwrap();
-                    let value2 = self.operand_stack.pop().unwrap();
+                    let value1 = pop!();
+                    let value2 = pop!();
                     match value2 {
                         Value::Long(_) | Value::Double(_) => {
-                            self.operand_stack.extend_from_slice(&[value1.clone(), value2, value1]);
+                            push!(value1.clone(), value2, value1);
                         },
                         _ => {
-                            let value3 = self.operand_stack.pop().unwrap();
-                            self.operand_stack.extend_from_slice(
-                                &[value1.clone(), value3, value2, value1]);
+                            let value3 = pop!();
+                            push!(value1.clone(), value3, value2, value1);
                         },
                     }
                 },
                 opcode::DUP2 => {
-                    let value1 = self.operand_stack.pop().unwrap();
+                    let value1 = pop!();
                     match value1 {
                         Value::Long(_) | Value::Double(_) => {
-                            self.operand_stack.extend_from_slice(&[value1.clone(), value1]);
+                            push!(value1.clone(), value1);
                         },
                         _ => {
-                            let value2 = self.operand_stack.pop().unwrap();
-                            self.operand_stack.extend_from_slice(
-                                &[value2.clone(), value1.clone(), value2, value1]);
+                            let value2 = pop!();
+                            push!(value2.clone(), value1.clone(), value2, value1);
                         },
                     }
                 },
+
+                opcode::SWAP => {
+                    // both values need to be category 1
+                    let v1 = pop!();
+                    let v2 = pop!();
+                    push!(v1);
+                    push!(v2);
+                },
+
+                opcode::IADD => push!(Value::Int(pop!(Value::Int) + pop!(Value::Int))),
+
+/*
+    pub const IADD: u8 = 0x60;
+    pub const LADD: u8 = 0x61;
+    pub const FADD: u8 = 0x62;
+    pub const DADD: u8 = 0x63;
+    pub const ISUB: u8 = 0x64;
+    pub const LSUB: u8 = 0x65;
+    pub const FSUB: u8 = 0x66;
+    pub const DSUB: u8 = 0x67;
+    pub const IMUL: u8 = 0x68;
+    pub const LMUL: u8 = 0x69;
+    pub const FMUL: u8 = 0x6a;
+    pub const DMUL: u8 = 0x6b;
+    pub const IDIV: u8 = 0x6c;
+    pub const LDIV: u8 = 0x6d;
+    pub const FDIV: u8 = 0x6e;
+    pub const DDIV: u8 = 0x6f;
+    pub const IREM: u8 = 0x70;
+    pub const LREM: u8 = 0x71;
+    pub const FREM: u8 = 0x72;
+    pub const DREM: u8 = 0x73;
+    pub const INEG: u8 = 0x74;
+    pub const LNEG: u8 = 0x75;
+    pub const FNEG: u8 = 0x76;
+    pub const DNEG: u8 = 0x77;
+    pub const ISHL: u8 = 0x78;
+    pub const LSHL: u8 = 0x79;
+    pub const ISHR: u8 = 0x7a;
+    pub const LSHR: u8 = 0x7b;
+    pub const IUSHR: u8 = 0x7c;
+    pub const LUSHR: u8 = 0x7d;
+    pub const IAND: u8 = 0x7e;
+    pub const LAND: u8 = 0x7f;
+    pub const IOR: u8 = 0x80;
+    pub const LOR: u8 = 0x81;
+    pub const IXOR: u8 = 0x82;
+    pub const LXOR: u8 = 0x83;
+    pub const IINC: u8 = 0x84;
+
+*/
 
                 opcode::RETURN => return None,
 
@@ -259,7 +331,7 @@ impl<'a> Frame<'a> {
                             self.current_class.get_constant_pool()[index] {
                         let resolved_class = class_loader.resolve_class(&symref.class).unwrap();
                         let value = resolved_class.resolve_and_get_field(symref, class_loader);
-                        self.operand_stack.push(value)
+                        push!(value)
                     } else {
                         panic!("getstatic refers to non-field in constant pool");
                     }
@@ -270,7 +342,7 @@ impl<'a> Frame<'a> {
                     if let Some(RuntimeConstantPoolEntry::FieldRef(ref symref)) =
                             self.current_class.get_constant_pool()[index] {
                         let resolved_class = class_loader.resolve_class(&symref.class).unwrap();
-                        let new_value = self.operand_stack.pop().unwrap();
+                        let new_value = pop!();
                         resolved_class.resolve_and_put_field(symref, new_value, class_loader);
                     } else {
                         panic!("putstatic refers to non-field in constant pool");
@@ -281,10 +353,10 @@ impl<'a> Frame<'a> {
                     let index = self.read_next_short();
                     if let Some(RuntimeConstantPoolEntry::FieldRef(ref symref)) =
                             self.current_class.get_constant_pool()[index] {
-                        match self.operand_stack.pop().unwrap() {
+                        match pop!() {
                             Value::ScalarReference(object_rc) => {
                                 let value = object_rc.borrow().get_field(&symref.sig).clone();
-                                self.operand_stack.push(value);
+                                push!(value);
                             },
                             Value::ArrayReference(_) => panic!("getfield called on array"),
                             Value::NullReference => panic!("NullPointerException"),
@@ -297,10 +369,10 @@ impl<'a> Frame<'a> {
 
                 opcode::PUTFIELD => {
                     let index = self.read_next_short();
-                    let value = self.operand_stack.pop().unwrap();
+                    let value = pop!();
                     if let Some(RuntimeConstantPoolEntry::FieldRef(ref symref)) =
                             self.current_class.get_constant_pool()[index] {
-                        match self.operand_stack.pop().unwrap() {
+                        match pop!() {
                             Value::ScalarReference(object_rc) => {
                                 object_rc.borrow_mut().put_field(symref.sig.clone(), value);
                             },
@@ -418,7 +490,7 @@ impl<'a> Frame<'a> {
                         resolved_class.initialize(class_loader);
                         let object = Scalar::new(resolved_class);
                         let object_rc = Rc::new(RefCell::new(object));
-                        self.operand_stack.push(Value::ScalarReference(object_rc));
+                        push!(Value::ScalarReference(object_rc));
                     } else {
                         panic!("new refers to non-class in constant pool");
                     }
@@ -441,33 +513,27 @@ impl<'a> Frame<'a> {
                     let class_symref = symref::Class { sig: class_sig };
                     let class = class_loader.resolve_class(&class_symref).unwrap();
 
-                    match self.operand_stack.pop().unwrap() {
+                    match pop!() {
                         Value::Int(Wrapping(length)) => {
                             let array = Array::new(class, length);
                             let array_rc = Rc::new(RefCell::new(array));
-                            self.operand_stack.push(Value::ArrayReference(array_rc));
+                            push!(Value::ArrayReference(array_rc));
                         },
                         _ => panic!("newarray called with non-int length"),
                     }
                 },
 
                 opcode::ARRAYLENGTH => {
-                    match self.operand_stack.pop().unwrap() {
-                        Value::ArrayReference(array_rc) => {
-                            let len = array_rc.borrow().len();
-                            self.operand_stack.push(Value::Int(Wrapping(len)));
-                        },
-                        Value::NullReference => panic!("NullPointerException"),
-                        _ => panic!("arraylength called on non-array"),
-                    }
+                    let array_rc = pop_not_null!(Value::ArrayReference);
+                    let len = array_rc.borrow().len();
+                    push!(Value::Int(Wrapping(len)));
                 },
 
                 _ => {
                     println!("{}", self.code[(self.pc as usize) - 1]);
-                    panic!("undefined or reserved opcode")
+                    panic!("unknown or reserved opcode")
                 },
             }
         }
     }
 }
-
