@@ -93,9 +93,8 @@ impl<'a> Frame<'a> {
 
         macro_rules! do_ldc {
             ($index: ident) => ({
-                // TODO: should use resolve_literal
                 let value = self.current_class.get_constant_pool()
-                                .resolve_literal($index, class_loader).unwrap();
+                    .resolve_literal($index, class_loader).unwrap();
                 push!(value);
             });
         }
@@ -173,6 +172,9 @@ impl<'a> Frame<'a> {
                 let v = $v;     // satisfy the borrow checker
                 self.operand_stack.push(v);
             });
+            ($($vs: expr),*) => ({
+                self.operand_stack.extend_from_slice(&[$($vs),*])
+            })
         }
 
         loop {
@@ -264,19 +266,18 @@ impl<'a> Frame<'a> {
                     let value2 = pop!();
 
                     // TODO: make this a macro
-                    self.operand_stack.extend_from_slice(&[value1.clone(), value2, value1]);
+                    push!(value1.clone(), value2, value1);
                 },
                 opcode::DUP_X2 => {
                     let value1 = pop!();
                     let value2 = pop!();
                     match value2 {
                         Value::Long(_) | Value::Double(_) => {
-                            self.operand_stack.extend_from_slice(&[value1.clone(), value2, value1]);
+                            push!(value1.clone(), value2, value1);
                         },
                         _ => {
                             let value3 = pop!();
-                            self.operand_stack.extend_from_slice(
-                                &[value1.clone(), value3, value2, value1]);
+                            push!(value1.clone(), value3, value2, value1);
                         },
                     }
                 },
@@ -284,12 +285,11 @@ impl<'a> Frame<'a> {
                     let value1 = pop!();
                     match value1 {
                         Value::Long(_) | Value::Double(_) => {
-                            self.operand_stack.extend_from_slice(&[value1.clone(), value1]);
+                            push!(value1.clone(), value1);
                         },
                         _ => {
                             let value2 = pop!();
-                            self.operand_stack.extend_from_slice(
-                                &[value2.clone(), value1.clone(), value2, value1]);
+                            push!(value2.clone(), value1.clone(), value2, value1);
                         },
                     }
                 },
@@ -542,4 +542,3 @@ impl<'a> Frame<'a> {
         }
     }
 }
-
