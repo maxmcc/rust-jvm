@@ -55,16 +55,19 @@ impl<'a> Frame<'a> {
         }
     }
 
+    /// Read a byte (`u8`) value and advance the program counter.
     fn read_next_byte(&mut self) -> u8 {
         let result = self.code[self.pc as usize];
         self.pc += 1;
         result
     }
 
+    /// Read a short (`u16`) value and advance the program counter by 2.
     fn read_next_short(&mut self) -> u16 {
         ((self.read_next_byte() as u16) << 8) | (self.read_next_byte() as u16)
     }
 
+    /// Remove `count` items from the operand stack.
     fn pop_multi(&mut self, count: usize) -> Vec<Value> {
         let start_index = self.operand_stack.len() - count;
         self.operand_stack.drain(start_index..).collect()
