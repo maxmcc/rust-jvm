@@ -1,6 +1,6 @@
 use std::fmt;
 
-use vm::symref;
+use vm::{sig, symref};
 use vm::value::Value;
 
 pub struct NativeMethod(&'static Fn(Vec<Value>) -> Option<Value>);
@@ -17,6 +17,25 @@ impl NativeMethod {
     }
 }
 
+const NOP: &'static Fn(Vec<Value>) -> Option<Value> = &(|_| None);
+
 pub fn bind(symref: &symref::Method) -> Option<NativeMethod> {
-    None
+    let object_symref = symref::Class {
+        sig: sig::Class::Scalar(String::from("java/lang/System")),
+    };
+    let register_natives_sig = sig::Method {
+        name: String::from("registerNatives"),
+        params: vec![],
+        return_ty: None,
+    };
+    let register_natives_symref = symref::Method {
+        class: object_symref,
+        sig: register_natives_sig,
+    };
+
+    if *symref == register_natives_symref {
+        Some(NativeMethod(NOP))
+    } else {
+        None
+    }
 }
