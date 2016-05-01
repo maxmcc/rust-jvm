@@ -51,9 +51,9 @@ const ARRAYCOPY: &'static Fn(Vec<Value>) -> Option<Value> = &(|args| {
 });
 
 const WRITE: &'static Fn(Vec<Value>) -> Option<Value> = &(|args| {
-    if let Value::ArrayReference(ref b_rc) = args[0] {
-        if let Value::Int(Wrapping(off)) = args[1] {
-            if let Value::Int(Wrapping(len)) = args[2] {
+    if let Value::ArrayReference(ref b_rc) = args[1] {
+        if let Value::Int(Wrapping(off)) = args[2] {
+            if let Value::Int(Wrapping(len)) = args[3] {
                 let b = b_rc.borrow();
                 let mut bytes = vec![];
                 for i in 0..len {
