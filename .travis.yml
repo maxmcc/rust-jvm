@@ -3,7 +3,7 @@ script: "cargo build --verbose"
 after_success: |
   [ $TRAVIS_BRANCH = master ] &&
   [ $TRAVIS_PULL_REQUEST = false ] &&
-  cargo doc &&
+  cargo rustdoc --lib -- --no-defaults --passes collapse-docs --passes unindent-comments --passes strip-priv-imports &&
   echo "<meta http-equiv=refresh content=0;url=rust_jvm/index.html>" > target/doc/index.html &&
   sudo pip install ghp-import &&
   ghp-import -n target/doc &&
