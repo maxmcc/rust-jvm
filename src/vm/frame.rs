@@ -195,31 +195,6 @@ impl<'a> Frame<'a> {
             });
         }
 
-        macro_rules! do_if_acmp {
-            ($cmp_op: expr) => ({
-                let branch_offset = self.read_next_short() as i16;
-                let v2 = pop!();
-                let v1 = pop!();
-                match (v1, v2) {
-                    (Value::ArrayReference(x), Value::ArrayReference(y)) => {
-                        if x.as_ref() as *const uint == y.as_ref() as *const uint {
-                            // 3 byte long instruction; read* operations move the PC.
-                            let this_pc_start = self.pc - 3;
-                            self.pc = (this_pc_start as i32 + branch_offset as i32) as u16
-                        }
-                    },
-                    (Value::ScalarReference(x), Value::ScalarReference(y)) => {
-                        if x.as_ref() as *const uint == y.as_ref() as *const uint {
-                            // 3 byte long instruction; read* operations move the PC.
-                            let this_pc_start = self.pc - 3;
-                            self.pc = (this_pc_start as i32 + branch_offset as i32) as u16
-                        }
-                    },
-                    _ => ()
-                }
-            });
-        }
-
         macro_rules! do_if_int {
             ($pred: expr) => ({
                 let branch_offset = self.read_next_short() as i16;
@@ -467,6 +442,51 @@ impl<'a> Frame<'a> {
                 opcode::IF_ICMPGT => do_if_icmp!(Wrapping::<i32>::gt),
                 opcode::IF_ICMPGE => do_if_icmp!(Wrapping::<i32>::ge),
                 opcode::IF_ICMPLE => do_if_icmp!(Wrapping::<i32>::le),
+
+                opcode::IF_ACMPEQ => {
+                    let branch_offset = self.read_next_short() as i16;
+                    let v2 = pop!();
+                    let v1 = pop!();
+                    match (v1, v2) {
+                        (Value::ArrayReference(x), Value::ArrayReference(y)) => {
+                            if x.as_ref() as *const RefCell<_> == y.as_ref() as *const RefCell<_> {
+                                // 3 byte long instruction; read* operations move the PC.
+                                let this_pc_start = self.pc - 3;
+                                self.pc = (this_pc_start as i32 + branch_offset as i32) as u16;
+                            }
+                        },
+                        (Value::ScalarReference(x), Value::ScalarReference(y)) => {
+                            if x.as_ref() as *const RefCell<_> == y.as_ref() as *const RefCell<_> {
+                                // 3 byte long instruction; read* operations move the PC.
+                                let this_pc_start = self.pc - 3;
+                                self.pc = (this_pc_start as i32 + branch_offset as i32) as u16;
+                            }
+                        }
+                        _ => (),
+                    }
+                },
+                opcode::IF_ACMPNE => {
+                    let branch_offset = self.read_next_short() as i16;
+                    let v2 = pop!();
+                    let v1 = pop!();
+                    match (v1, v2) {
+                        (Value::ArrayReference(x), Value::ArrayReference(y)) => {
+                            if x.as_ref() as *const RefCell<_> != y.as_ref() as *const RefCell<_> {
+                                // 3 byte long instruction; read* operations move the PC.
+                                let this_pc_start = self.pc - 3;
+                                self.pc = (this_pc_start as i32 + branch_offset as i32) as u16;
+                            }
+                        },
+                        (Value::ScalarReference(x), Value::ScalarReference(y)) => {
+                            if x.as_ref() as *const RefCell<_> != y.as_ref() as *const RefCell<_> {
+                                // 3 byte long instruction; read* operations move the PC.
+                                let this_pc_start = self.pc - 3;
+                                self.pc = (this_pc_start as i32 + branch_offset as i32) as u16;
+                            }
+                        },
+                        _ => (),
+                    }
+                },
 
                 opcode::GOTO => {
                     let branch_offset = self.read_next_short() as i16;
