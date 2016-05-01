@@ -323,6 +323,32 @@ impl<'a> Frame<'a> {
 
 */
 
+                // TODO write a macro for this
+                opcode::IF_ICMPGT => {
+                    let branch_offset = self.read_next_short() as i16;
+                    let value2 = self.operand_stack.pop();
+                    if let Some(Value::Int(i2)) = value2 {
+                        let value1 = self.operand_stack.pop();
+                        if let Some(Value::Int(i1)) = value1 {
+                            if i1 > i2 {
+                                self.pc -= 3;
+                                self.pc = ((self.pc as i32) + (branch_offset as i32)) as u16
+                            }
+                        } else {
+                            panic!("if_icmpgt on non-int");
+                        }
+                    } else {
+                        panic!("if_icmpgt on non-int");
+                    }
+                },
+                opcode::GOTO => {
+                    let branch_offset = self.read_next_short() as i16;
+                    self.pc -= 3;
+                    self.pc = ((self.pc as i32) + (branch_offset as i32)) as u16;
+                },
+
+                opcode::IRETURN | opcode::LRETURN | opcode::FRETURN | opcode::DRETURN
+                        | opcode::ARETURN => return self.operand_stack.pop(),
                 opcode::RETURN => return None,
 
                 opcode::GETSTATIC => {
