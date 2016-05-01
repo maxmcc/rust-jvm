@@ -195,6 +195,43 @@ impl<'a> Frame<'a> {
             });
         }
 
+        macro_rules! do_if_acmp {
+            ($cmp_op: expr) => ({
+                let branch_offset = self.read_next_short() as i16;
+                let v2 = pop!();
+                let v1 = pop!();
+                match (v1, v2) {
+                    (Value::ArrayReference(x), Value::ArrayReference(y)) => {
+                        if x.as_ref() as *const uint == y.as_ref() as *const uint {
+                            // 3 byte long instruction; read* operations move the PC.
+                            let this_pc_start = self.pc - 3;
+                            self.pc = (this_pc_start as i32 + branch_offset as i32) as u16
+                        }
+                    },
+                    (Value::ScalarReference(x), Value::ScalarReference(y)) => {
+                        if x.as_ref() as *const uint == y.as_ref() as *const uint {
+                            // 3 byte long instruction; read* operations move the PC.
+                            let this_pc_start = self.pc - 3;
+                            self.pc = (this_pc_start as i32 + branch_offset as i32) as u16
+                        }
+                    },
+                    _ => ()
+                }
+            });
+        }
+
+        macro_rules! do_if_int {
+            ($pred: expr) => ({
+                let branch_offset = self.read_next_short() as i16;
+                let x = pop!(Value::Int);
+                if $pred(x) {
+                    // 3 byte long instruction; read* operations move the PC.
+                    let this_pc_start = self.pc - 3;
+                    self.pc = (this_pc_start as i32 + branch_offset as i32) as u16
+                }
+            });
+        }
+
         loop {
             match self.read_next_byte() {
                 opcode::NOP => (),
@@ -610,6 +647,28 @@ impl<'a> Frame<'a> {
                     let len = array_rc.borrow().len();
                     push!(Value::Int(Wrapping(len)));
                 },
+
+                // TODO
+                opcode::IFNULL => {
+                    let branch_offset = self.read_next_short() as i16;
+                    if let Value::NullReference = pop!() {
+                        // 3 byte long instruction; read* operations move the PC.
+                        let this_pc_start = self.pc - 3;
+                        self.pc = (this_pc_start as i32 + branch_offset as i32) as u16
+                    }
+                },
+                opcode::IFNONNULL => {
+                    let branch_offset = self.read_next_short() as i16;
+                    if let Value::NullReference = pop!() {
+                        ()
+                    } else {
+                        // 3 byte long instruction; read* operations move the PC.
+                        let this_pc_start = self.pc - 3;
+                        self.pc = (this_pc_start as i32 + branch_offset as i32) as u16
+                    }
+                },
+
+                // TODO
 
                 _ => {
                     println!("{}", self.code[(self.pc as usize) - 1]);
