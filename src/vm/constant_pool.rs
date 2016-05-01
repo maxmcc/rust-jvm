@@ -1,4 +1,25 @@
-//! The runtime constant pool
+//! The runtime constant pool.
+//!
+//! Near the beginning of every Java class file is a section known as the _constant pool_. Broadly
+//! speaking, this constant pool contains two types of values: _symbolic references_ and
+//! _literals_. Symbolic references are the names and signatures of classes, fields, and methods
+//! referred to in the file, which are _resolved_ into their runtime representations by the JVM.
+//! Literals can be of primitive types or `String` literals, which are stored in a format called
+//! "modified UTF-8". The constant pool is defined in §4.4 of the specification.
+//!
+//! One of the class loader's tasks is to construct a _runtime constant pool_ from the constant
+//! pool contained in the class file. This module contains the structures representing that runtime
+//! constant pool, which are the structures actually used when constant pool entries are referred
+//! to in Java bytecode. More information about the runtime constant pool is found in §5.1 of the
+//! specification.
+//!
+//! There are many instructions which refer to entries in the runtime constant pool. Any
+//! instruction which refers to a particular class, like the `new` instruction, refers to a
+//! symbolic reference in the runtime constant pool; any instruction referring to a field or method
+//! similarly also refers to a symbolic reference. In addition, the `ldc`, `ldc_w`, and `ldc2_w`
+//! instructions allow Java bytecode to directly load constant literals (and, if reflection were
+//! implemented, other constant pool entries as well) onto the stack for manipulation by the
+//! program.
 
 use std::cell::RefCell;
 use std::num::Wrapping;
@@ -31,6 +52,7 @@ pub enum RuntimeConstantPoolEntry {
 }
 
 #[derive(Debug)]
+/// A runtime constant pool. This just consists of a `OneIndexedVec` of constant pool entries.
 pub struct RuntimeConstantPool {
     entries: OneIndexedVec<Option<RuntimeConstantPoolEntry>>,
 }
@@ -44,6 +66,9 @@ impl Index<constant_pool_index> for RuntimeConstantPool {
 }
 
 impl RuntimeConstantPool {
+    /// Creates a new runtime constant pool from the `ConstantPool` returned by the class file
+    /// parser. Most of this process involves constructing `sig` and `symref` structures
+    /// representing the symbolic references in the constant pool.
     pub fn new(constant_pool: &ConstantPool) -> Self {
         let mut entries = vec![];
         for info in constant_pool {
@@ -119,6 +144,11 @@ impl RuntimeConstantPool {
         RuntimeConstantPool { entries: OneIndexedVec::from(entries) }
     }
 
+    /// Constructs a `symref::Class` from a `ConstantPoolInfo::Class`, panicking if `info` is of a
+    /// different variant of `ConstantPoolInfo`.
+    ///
+    /// This should only be called where the specification requires that `info` be of the correct
+    /// variant.
     fn force_class_ref(constant_pool: &ConstantPool, info: &ConstantPoolInfo) -> symref::Class {
         match *info {
             ConstantPoolInfo::Class { name_index } => {
@@ -129,6 +159,14 @@ impl RuntimeConstantPool {
         }
     }
 
+    /// Constructs a tuple of name and descriptor (type) strings from a
+    /// `ConstantPoolInfo::NameAndType`, panicking if `info` is of a different variant of
+    /// `ConstantPoolInfo`. The names of classes are binary names (§4.2.1) while the names of
+    /// fields and methods are unqualified names (§4.2.2). Descriptor formats vary depending on the
+    /// type of descriptor being referenced (§4.3).
+    ///
+    /// This should only be called where the specification requires that `info` be of the correct
+    /// variant.
     fn force_name_and_type(constant_pool: &ConstantPool, info: &ConstantPoolInfo)
             -> (String, String) {
         match *info {
@@ -143,15 +181,24 @@ impl RuntimeConstantPool {
         }
     }
 
+    /// Constructs a `ModifiedUtf8String` from a `ConstantPoolInfo::Utf8`, panicking in `info` is
+    /// of a different variant of `ConstantPoolInfo`.
+    ///
+    /// This should only be called where the specification requires that `info` be of the correct
+    /// variant.
     fn force_string(info: &ConstantPoolInfo) -> ModifiedUtf8String {
         match *info {
             ConstantPoolInfo::Utf8 { ref bytes } => {
                 ModifiedUtf8String::new(bytes.to_vec())
             },
-            _ => panic!("attempting to coerce non-UTF8 constant to String"),
+            _ => panic!("expected ConstantPoolInfo::Utf8"),
         }
     }
 
+    /// Returns the `String` at the runtime constant pool entry at `index`, panicking if that entry
+    /// is not a `RuntimeConstantPoolEntry::StringValue`. This is used during class creation,
+    /// because the structures describing fields and methods later in the class file (after the
+    /// constant pool) use constant pool indices to refer to their names.
     pub fn lookup_raw_string(&self, index: constant_pool_index) -> String {
         match self.entries[index as usize] {
             Some(RuntimeConstantPoolEntry::StringValue(ref modified_utf8)) =>
@@ -160,6 +207,10 @@ impl RuntimeConstantPool {
         }
     }
 
+    /// Resolves a literal value in the constant pool into a `Value`. For `String` literals, this
+    /// requires instantiating an instance of the `String` class, which we do by calling the
+    /// `String(char[])` constructor using the content of the modified UTF-8 string in the constant
+    /// pool, parsed into UTF-16.
     pub fn resolve_literal(&self, index: constant_pool_index, class_loader: &mut ClassLoader)
             -> Result<Value, class_loader::Error> {
         match self.entries[index as usize] {
@@ -216,6 +267,8 @@ impl RuntimeConstantPool {
 }
 
 #[derive(Debug)]
+/// Represents a modified UTF-8 string (§4.4.7). This structure is created directly from the bytes
+/// in the class file, and has not undergone any kind of validation.
 pub struct ModifiedUtf8String {
     bytes: Vec<u8>,
 }
@@ -225,6 +278,7 @@ impl ModifiedUtf8String {
         ModifiedUtf8String { bytes: bytes }
     }
 
+    /// Converts a modified UTF-8 string to a Rust `String`.
     fn to_string(&self) -> String {
         let mut utf8 = vec![];
         let mut i = 0;
@@ -285,6 +339,9 @@ impl ModifiedUtf8String {
         String::from_utf8(utf8).expect("unexpected error decoding modified UTF-8")
     }
 
+    /// Converts a modified UTF-8 string to a UTF-16 string. This function is provided as an
+    /// optimization in creating Java `String` literals, which are in UTF-16 format. It does not
+    /// validate surrogate pairs.
     fn to_utf16(&self) -> Vec<u16> {
         let mut utf16 = vec![];
         let mut i = 0;
