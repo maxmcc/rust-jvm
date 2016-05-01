@@ -1,5 +1,11 @@
+//! Modified UTF-8 string slices.
+//!
+//! See [§4.4.7](https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.4.7).
+
 use std::char;
 
+/// Errors which can occur when attempting to interpret a sequence of `u8` as a modified UTF-8
+/// string.
 #[derive(Debug)]
 pub struct ModifiedUtf8Error {
     valid_up_to: usize,
