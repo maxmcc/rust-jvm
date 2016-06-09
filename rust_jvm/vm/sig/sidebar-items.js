@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Class","A class signature."],["Type","Java language type information."]],"struct":[["Field","A field signature."],["Method","A method signature."]]});

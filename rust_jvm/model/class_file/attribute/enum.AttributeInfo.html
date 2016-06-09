@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `AttributeInfo` enum in crate `rust_jvm`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, AttributeInfo">
+
+    <title>rust_jvm::model::class_file::attribute::AttributeInfo - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../../../index.html'>rust_jvm</a>::<wbr><a href='../../index.html'>model</a>::<wbr><a href='../index.html'>class_file</a>::<wbr><a href='index.html'>attribute</a></p><script>window.sidebarCurrent = {name: 'AttributeInfo', ty: 'enum', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content enum">
+<h1 class='fqn'><span class='in-band'>Enum <a href='../../../index.html'>rust_jvm</a>::<wbr><a href='../../index.html'>model</a>::<wbr><a href='../index.html'>class_file</a>::<wbr><a href='index.html'>attribute</a>::<wbr><a class='enum' href=''>AttributeInfo</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-664' class='srclink' href='../../../../src/rust_jvm/src/model/class_file/attribute/mod.rs.html#205-287' title='goto source code'>[src]</a></span></h1>
+<pre class='rust enum'>pub enum AttributeInfo {
+    ConstantValue {
+        constant_value_index: <a class='type' href='../../../../rust_jvm/model/class_file/type.constant_pool_index.html' title='rust_jvm::model::class_file::constant_pool_index'>constant_pool_index</a>,
+    },
+    Code {
+        max_stack: <a class='type' href='../../../../rust_jvm/model/class_file/type.u2.html' title='rust_jvm::model::class_file::u2'>u2</a>,
+        max_locals: <a class='type' href='../../../../rust_jvm/model/class_file/type.u2.html' title='rust_jvm::model::class_file::u2'>u2</a>,
+        code: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='type' href='../../../../rust_jvm/model/class_file/type.u1.html' title='rust_jvm::model::class_file::u1'>u1</a>&gt;,
+        exception_table: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../../../../rust_jvm/model/class_file/attribute/struct.ExceptionTableEntry.html' title='rust_jvm::model::class_file::attribute::ExceptionTableEntry'>ExceptionTableEntry</a>&gt;,
+        attributes: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='enum' href='../../../../rust_jvm/model/class_file/attribute/enum.AttributeInfo.html' title='rust_jvm::model::class_file::attribute::AttributeInfo'>AttributeInfo</a>&gt;,
+    },
+    StackMapTable {
+        entries: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='enum' href='../../../../rust_jvm/model/class_file/attribute/stack_map_frame/enum.StackMapFrame.html' title='rust_jvm::model::class_file::attribute::stack_map_frame::StackMapFrame'>StackMapFrame</a>&gt;,
+    },
+    Exceptions {
+        exception_index_table: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='type' href='../../../../rust_jvm/model/class_file/type.constant_pool_index.html' title='rust_jvm::model::class_file::constant_pool_index'>constant_pool_index</a>&gt;,
+    },
+    BootstrapMethods {
+        bootstrap_methods: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../../../../rust_jvm/model/class_file/attribute/struct.BootstrapMethod.html' title='rust_jvm::model::class_file::attribute::BootstrapMethod'>BootstrapMethod</a>&gt;,
+    },
+    InnerClasses {
+        classes: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../../../../rust_jvm/model/class_file/attribute/struct.InnerClass.html' title='rust_jvm::model::class_file::attribute::InnerClass'>InnerClass</a>&gt;,
+    },
+    EnclosingMethod {
+        class_index: <a class='type' href='../../../../rust_jvm/model/class_file/type.constant_pool_index.html' title='rust_jvm::model::class_file::constant_pool_index'>constant_pool_index</a>,
+        method_index: <a class='type' href='../../../../rust_jvm/model/class_file/type.constant_pool_index.html' title='rust_jvm::model::class_file::constant_pool_index'>constant_pool_index</a>,
+    },
+    Synthetic,
+    Signature {
+        signature_index: <a class='type' href='../../../../rust_jvm/model/class_file/type.constant_pool_index.html' title='rust_jvm::model::class_file::constant_pool_index'>constant_pool_index</a>,
+    },
+    RuntimeVisibleAnnotations {
+        annotations: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../../../../rust_jvm/model/class_file/attribute/annotation/struct.Annotation.html' title='rust_jvm::model::class_file::attribute::annotation::Annotation'>Annotation</a>&gt;,
+    },
+    RuntimeInvisibleAnnotations {
+        annotations: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../../../../rust_jvm/model/class_file/attribute/annotation/struct.Annotation.html' title='rust_jvm::model::class_file::attribute::annotation::Annotation'>Annotation</a>&gt;,
+    },
+    RuntimeVisibleParameterAnnotations {
+        parameter_annotations: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../../../../rust_jvm/model/class_file/attribute/annotation/struct.Annotation.html' title='rust_jvm::model::class_file::attribute::annotation::Annotation'>Annotation</a>&gt;&gt;,
+    },
+    RuntimeInvisibleParameterAnnotations {
+        parameter_annotations: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../../../../rust_jvm/model/class_file/attribute/annotation/struct.Annotation.html' title='rust_jvm::model::class_file::attribute::annotation::Annotation'>Annotation</a>&gt;&gt;,
+    },
+    RuntimeVisibleTypeAnnotations {
+        annotations: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../../../../rust_jvm/model/class_file/attribute/annotation/struct.TypeAnnotation.html' title='rust_jvm::model::class_file::attribute::annotation::TypeAnnotation'>TypeAnnotation</a>&gt;,
+    },
+    RuntimeInvisibleTypeAnnotations {
+        annotations: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../../../../rust_jvm/model/class_file/attribute/annotation/struct.TypeAnnotation.html' title='rust_jvm::model::class_file::attribute::annotation::TypeAnnotation'>TypeAnnotation</a>&gt;,
+    },
+    AnnotationDefault {
+        default_value: <a class='enum' href='../../../../rust_jvm/model/class_file/attribute/annotation/element_value/enum.ElementValue.html' title='rust_jvm::model::class_file::attribute::annotation::element_value::ElementValue'>ElementValue</a>,
+    },
+    MethodParameters {
+        parameters: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../../../../rust_jvm/model/class_file/attribute/struct.MethodParameter.html' title='rust_jvm::model::class_file::attribute::MethodParameter'>MethodParameter</a>&gt;,
+    },
+    SourceFile {
+        sourcefile_index: <a class='type' href='../../../../rust_jvm/model/class_file/type.constant_pool_index.html' title='rust_jvm::model::class_file::constant_pool_index'>constant_pool_index</a>,
+    },
+    SourceDebugExtension {
+        debug_extension: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='type' href='../../../../rust_jvm/model/class_file/type.u1.html' title='rust_jvm::model::class_file::u1'>u1</a>&gt;,
+    },
+    LineNumberTable {
+        line_number_table: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../../../../rust_jvm/model/class_file/attribute/struct.LineNumberInfo.html' title='rust_jvm::model::class_file::attribute::LineNumberInfo'>LineNumberInfo</a>&gt;,
+    },
+    LocalVariableTable {
+        local_variable_table: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../../../../rust_jvm/model/class_file/attribute/struct.LocalVariableInfo.html' title='rust_jvm::model::class_file::attribute::LocalVariableInfo'>LocalVariableInfo</a>&gt;,
+    },
+    LocalVariableTypeTable {
+        local_variable_type_table: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../../../../rust_jvm/model/class_file/attribute/struct.LocalVariableTypeInfo.html' title='rust_jvm::model::class_file::attribute::LocalVariableTypeInfo'>LocalVariableTypeInfo</a>&gt;,
+    },
+    Deprecated,
+    Unknown {
+        attribute_name_index: <a class='type' href='../../../../rust_jvm/model/class_file/type.constant_pool_index.html' title='rust_jvm::model::class_file::constant_pool_index'>constant_pool_index</a>,
+        info: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='type' href='../../../../rust_jvm/model/class_file/type.u1.html' title='rust_jvm::model::class_file::u1'>u1</a>&gt;,
+    },
+}</pre><div class='docblock'><p>Attributes are used in the <code>ClassFile</code>, <code>FieldInfo</code>, <code>MethodInfo</code>, and
+<code>AttributeInfo::Code</code> structures of the class file format (§4.1, §4.5, §4.6,
+§4.7.3).</p>
+</div><h2 class='variants'>Variants</h2>
+<table class='variants_table'><tr><td id='variant.ConstantValue'><code>ConstantValue</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.ConstantValue.field.constant_value_index'><code>constant_value_index</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.Code'><code>Code</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.Code.field.max_stack'><code>max_stack</code></td><td></td></tr><tr><td id='variant.Code.field.max_locals'><code>max_locals</code></td><td></td></tr><tr><td id='variant.Code.field.code'><code>code</code></td><td></td></tr><tr><td id='variant.Code.field.exception_table'><code>exception_table</code></td><td></td></tr><tr><td id='variant.Code.field.attributes'><code>attributes</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.StackMapTable'><code>StackMapTable</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.StackMapTable.field.entries'><code>entries</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.Exceptions'><code>Exceptions</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.Exceptions.field.exception_index_table'><code>exception_index_table</code></td><td><div class='docblock'><p>Contains indices into the <code>constant_pool</code> table for the class type
+that the method is declared to throw.</p>
+</div></td></tr></table></td><td></td></tr><tr><td id='variant.BootstrapMethods'><code>BootstrapMethods</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.BootstrapMethods.field.bootstrap_methods'><code>bootstrap_methods</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.InnerClasses'><code>InnerClasses</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.InnerClasses.field.classes'><code>classes</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.EnclosingMethod'><code>EnclosingMethod</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.EnclosingMethod.field.class_index'><code>class_index</code></td><td></td></tr><tr><td id='variant.EnclosingMethod.field.method_index'><code>method_index</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.Synthetic'><code>Synthetic</code></td><td></td><td></td></tr><tr><td id='variant.Signature'><code>Signature</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.Signature.field.signature_index'><code>signature_index</code></td><td><div class='docblock'><p>A valid index into the <code>constant_pool</code> table for a <code>ConstantPoolInfo::Utf8</code> structure.</p>
+</div></td></tr></table></td><td></td></tr><tr><td id='variant.RuntimeVisibleAnnotations'><code>RuntimeVisibleAnnotations</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.RuntimeVisibleAnnotations.field.annotations'><code>annotations</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.RuntimeInvisibleAnnotations'><code>RuntimeInvisibleAnnotations</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.RuntimeInvisibleAnnotations.field.annotations'><code>annotations</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.RuntimeVisibleParameterAnnotations'><code>RuntimeVisibleParameterAnnotations</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.RuntimeVisibleParameterAnnotations.field.parameter_annotations'><code>parameter_annotations</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.RuntimeInvisibleParameterAnnotations'><code>RuntimeInvisibleParameterAnnotations</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.RuntimeInvisibleParameterAnnotations.field.parameter_annotations'><code>parameter_annotations</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.RuntimeVisibleTypeAnnotations'><code>RuntimeVisibleTypeAnnotations</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.RuntimeVisibleTypeAnnotations.field.annotations'><code>annotations</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.RuntimeInvisibleTypeAnnotations'><code>RuntimeInvisibleTypeAnnotations</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.RuntimeInvisibleTypeAnnotations.field.annotations'><code>annotations</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.AnnotationDefault'><code>AnnotationDefault</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.AnnotationDefault.field.default_value'><code>default_value</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.MethodParameters'><code>MethodParameters</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.MethodParameters.field.parameters'><code>parameters</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.SourceFile'><code>SourceFile</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.SourceFile.field.sourcefile_index'><code>sourcefile_index</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.SourceDebugExtension'><code>SourceDebugExtension</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.SourceDebugExtension.field.debug_extension'><code>debug_extension</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.LineNumberTable'><code>LineNumberTable</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.LineNumberTable.field.line_number_table'><code>line_number_table</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.LocalVariableTable'><code>LocalVariableTable</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.LocalVariableTable.field.local_variable_table'><code>local_variable_table</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.LocalVariableTypeTable'><code>LocalVariableTypeTable</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.LocalVariableTypeTable.field.local_variable_type_table'><code>local_variable_type_table</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.Deprecated'><code>Deprecated</code></td><td></td><td></td></tr><tr><td id='variant.Unknown'><code>Unknown</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.Unknown.field.attribute_name_index'><code>attribute_name_index</code></td><td><div class='docblock'><p>A valid index into the <code>constant_pool</code> table. The <code>constant_pool</code>
+entry at that index must be a valid <code>ConstantPoolInfo::Utf8</code>
+structure representing the name of the attribute.</p>
+</div></td></tr><tr><td id='variant.Unknown.field.info'><code>info</code></td><td><div class='docblock'><p>The data for this attribute.</p>
+</div></td></tr></table></td><td></td></tr></table><h2 id='implementations'>Trait Implementations</h2><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='enum' href='../../../../rust_jvm/model/class_file/attribute/enum.AttributeInfo.html' title='rust_jvm::model::class_file::attribute::AttributeInfo'>AttributeInfo</a></code></h3><div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../../../";
+        window.currentCrate = "rust_jvm";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../../../jquery.js"></script>
+    <script src="../../../../main.js"></script>
+    
+    <script defer src="../../../../search-index.js"></script>
+</body>
+</html>

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Class` struct in crate `rust_jvm`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Class">
+
+    <title>rust_jvm::vm::class::Class - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../../index.html'>rust_jvm</a>::<wbr><a href='../index.html'>vm</a>::<wbr><a href='index.html'>class</a></p><script>window.sidebarCurrent = {name: 'Class', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content struct">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../../index.html'>rust_jvm</a>::<wbr><a href='../index.html'>vm</a>::<wbr><a href='index.html'>class</a>::<wbr><a class='struct' href=''>Class</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-5430' class='srclink' href='../../../src/rust_jvm/src/vm/class.rs.html#18-53' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct Class {
+    pub symref: <a class='struct' href='../../../rust_jvm/vm/symref/struct.Class.html' title='rust_jvm::vm::symref::Class'>Class</a>,
+    pub access_flags: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u16.html'>u16</a>,
+    pub superclass: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/alloc/rc/struct.Rc.html' title='alloc::rc::Rc'>Rc</a>&lt;<a class='struct' href='../../../rust_jvm/vm/class/struct.Class.html' title='rust_jvm::vm::class::Class'>Class</a>&gt;&gt;,
+    constant_pool: <a class='struct' href='../../../rust_jvm/vm/constant_pool/struct.RuntimeConstantPool.html' title='rust_jvm::vm::constant_pool::RuntimeConstantPool'>RuntimeConstantPool</a>,
+    fields: <a class='struct' href='https://doc.rust-lang.org/nightly/std/collections/hash/map/struct.HashMap.html' title='std::collections::hash::map::HashMap'>HashMap</a>&lt;<a class='struct' href='../../../rust_jvm/vm/sig/struct.Field.html' title='rust_jvm::vm::sig::Field'>Field</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u16.html'>u16</a>&gt;,
+    field_constants: <a class='struct' href='https://doc.rust-lang.org/nightly/std/collections/hash/map/struct.HashMap.html' title='std::collections::hash::map::HashMap'>HashMap</a>&lt;<a class='struct' href='../../../rust_jvm/vm/sig/struct.Field.html' title='rust_jvm::vm::sig::Field'>Field</a>, <a class='type' href='../../../rust_jvm/model/class_file/type.constant_pool_index.html' title='rust_jvm::model::class_file::constant_pool_index'>constant_pool_index</a>&gt;,
+    methods: <a class='struct' href='https://doc.rust-lang.org/nightly/std/collections/hash/map/struct.HashMap.html' title='std::collections::hash::map::HashMap'>HashMap</a>&lt;<a class='struct' href='../../../rust_jvm/vm/sig/struct.Method.html' title='rust_jvm::vm::sig::Method'>Method</a>, <a class='struct' href='../../../rust_jvm/vm/class/struct.Method.html' title='rust_jvm::vm::class::Method'>Method</a>&gt;,
+    field_values: <a class='struct' href='https://doc.rust-lang.org/nightly/core/cell/struct.RefCell.html' title='core::cell::RefCell'>RefCell</a>&lt;<a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/std/collections/hash/map/struct.HashMap.html' title='std::collections::hash::map::HashMap'>HashMap</a>&lt;<a class='struct' href='../../../rust_jvm/vm/sig/struct.Field.html' title='rust_jvm::vm::sig::Field'>Field</a>, <a class='enum' href='../../../rust_jvm/vm/value/enum.Value.html' title='rust_jvm::vm::value::Value'>Value</a>&gt;&gt;&gt;,
+}</pre><div class='docblock'><p>A JVM representation of a class that has been loaded.</p>
+</div><h2 class='fields'>Fields</h2>
+<table><tr class='stab '>
+                             <td id='structfield.symref'><code>symref</code></td><td><div class='docblock'><p>A symbolic reference to the class, comprised of its name (if a scalar type) or element type
+(if an array class).</p>
+</div></td></tr><tr class='stab '>
+                             <td id='structfield.access_flags'><code>access_flags</code></td><td><div class='docblock'><p>The access flags for the class.</p>
+</div></td></tr><tr class='stab '>
+                             <td id='structfield.superclass'><code>superclass</code></td><td><div class='docblock'><p>The superclass extended by the class. If the class is <code>java/lang/Object</code>, this is <code>None</code>.</p>
+</div></td></tr><tr class='stab '>
+                             <td id='structfield.constant_pool'><code>constant_pool</code></td><td><div class='docblock'><p>The runtime constant pool of the current class, created from the constant pool defined in
+the <code>.class</code> file that has been loaded.</p>
+</div></td></tr><tr class='stab '>
+                             <td id='structfield.fields'><code>fields</code></td><td><div class='docblock'><p>The fields of this class mapped to their access flags. This map includes both <code>static</code> and
+non-<code>static</code> fields. We don&#39;t separate them because it makes it easier to throw the correct
+runtime <code>Error</code> when certain invalid conditions are detected.</p>
+</div></td></tr><tr class='stab '>
+                             <td id='structfield.field_constants'><code>field_constants</code></td><td><div class='docblock'><p>The constants which populate the <code>static final</code> fields of this class. We don&#39;t immediately
+put these values into <code>class_fields</code> because they can include <code>String</code> literals, and we may
+not have loaded the <code>String</code> class yet. (This is also consistent with the spec, which
+states that these constants are set at class initialization time.)</p>
+</div></td></tr><tr class='stab '>
+                             <td id='structfield.methods'><code>methods</code></td><td><div class='docblock'><p>The methods of the class, mapped to their method structures.</p>
+</div></td></tr><tr class='stab '>
+                             <td id='structfield.field_values'><code>field_values</code></td><td><div class='docblock'><p>The values of the static fields of this class. These are only set at class initialization.
+§5.5 of the JVM spec requires that initialization occur only at certain specific points,
+in particular:
+* When an instance of the class is created with the <code>new</code> instruction
+* When one of the <code>getstatic</code>, <code>putstatic</code>, or <code>invokestatic</code> instructions refers to one
+  of the static members of the class
+* When a subclass of the class is initialized
+* When the VM is about to begin executing the <code>main</code> method in the class containing the
+  overall program entry point
+Prior to initialization, this structure field contains <code>None</code>. After initialization, this
+field contains a <code>Some</code> with a <code>HashMap</code> value, which must contain the current values for
+each <code>static</code> field of this class.</p>
+</div></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl <a class='struct' href='../../../rust_jvm/vm/class/struct.Class.html' title='rust_jvm::vm::class::Class'>Class</a></code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>(symref: <a class='struct' href='../../../rust_jvm/vm/symref/struct.Class.html' title='rust_jvm::vm::symref::Class'>Class</a>, superclass: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/alloc/rc/struct.Rc.html' title='alloc::rc::Rc'>Rc</a>&lt;<a class='struct' href='../../../rust_jvm/vm/class/struct.Class.html' title='rust_jvm::vm::class::Class'>Class</a>&gt;&gt;, constant_pool: <a class='struct' href='../../../rust_jvm/vm/constant_pool/struct.RuntimeConstantPool.html' title='rust_jvm::vm::constant_pool::RuntimeConstantPool'>RuntimeConstantPool</a>, class_file: <a class='struct' href='../../../rust_jvm/model/class_file/struct.ClassFile.html' title='rust_jvm::model::class_file::ClassFile'>ClassFile</a>) -&gt; Self</code></h4>
+<h4 id='method.new_array' class='method'><code>fn <a href='#method.new_array' class='fnname'>new_array</a>(object_class: <a class='struct' href='https://doc.rust-lang.org/nightly/alloc/rc/struct.Rc.html' title='alloc::rc::Rc'>Rc</a>&lt;<a class='struct' href='../../../rust_jvm/vm/class/struct.Class.html' title='rust_jvm::vm::class::Class'>Class</a>&gt;, component_access_flags: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u16.html'>u16</a>, component_type: <a class='enum' href='../../../rust_jvm/vm/sig/enum.Type.html' title='rust_jvm::vm::sig::Type'>Type</a>) -&gt; Self</code></h4>
+<div class='docblock'><p>Create a new array class for a given element type.</p>
+</div><h4 id='method.get_symref' class='method'><code>fn <a href='#method.get_symref' class='fnname'>get_symref</a>(&amp;self) -&gt; <a class='struct' href='../../../rust_jvm/vm/symref/struct.Class.html' title='rust_jvm::vm::symref::Class'>Class</a></code></h4>
+<h4 id='method.get_access_flags' class='method'><code>fn <a href='#method.get_access_flags' class='fnname'>get_access_flags</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u16.html'>u16</a></code></h4>
+<h4 id='method.get_constant_pool' class='method'><code>fn <a href='#method.get_constant_pool' class='fnname'>get_constant_pool</a>(&amp;self) -&gt; &amp;<a class='struct' href='../../../rust_jvm/vm/constant_pool/struct.RuntimeConstantPool.html' title='rust_jvm::vm::constant_pool::RuntimeConstantPool'>RuntimeConstantPool</a></code></h4>
+<h4 id='method.resolve_method' class='method'><code>fn <a href='#method.resolve_method' class='fnname'>resolve_method</a>(&amp;self, method_symref: &amp;<a class='struct' href='../../../rust_jvm/vm/symref/struct.Method.html' title='rust_jvm::vm::symref::Method'>Method</a>) -&gt; &amp;<a class='struct' href='../../../rust_jvm/vm/class/struct.Method.html' title='rust_jvm::vm::class::Method'>Method</a></code></h4>
+<div class='docblock'><p>Find the method in the current class referred to by a given symbolic reference. If the
+method is not found, panics with a <code>NoSuchMethodError</code>.</p>
+</div><h4 id='method.find_method' class='method'><code>fn <a href='#method.find_method' class='fnname'>find_method</a>(&amp;self, method_sig: &amp;<a class='struct' href='../../../rust_jvm/vm/sig/struct.Method.html' title='rust_jvm::vm::sig::Method'>Method</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;&amp;<a class='struct' href='../../../rust_jvm/vm/class/struct.Method.html' title='rust_jvm::vm::class::Method'>Method</a>&gt;</code></h4>
+<div class='docblock'><p>Implements dynamic lookup of a method&#39;s signature in the current class. If no method with
+the given signature is found, then recursively searches the current class&#39;s superclasses.</p>
+</div><h4 id='method.dispatch_method' class='method'><code>fn <a href='#method.dispatch_method' class='fnname'>dispatch_method</a>(&amp;self, resolved_method: &amp;<a class='struct' href='../../../rust_jvm/vm/class/struct.Method.html' title='rust_jvm::vm::class::Method'>Method</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(</a>&amp;<a class='struct' href='../../../rust_jvm/vm/class/struct.Class.html' title='rust_jvm::vm::class::Class'>Class</a>, &amp;<a class='struct' href='../../../rust_jvm/vm/class/struct.Method.html' title='rust_jvm::vm::class::Method'>Method</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>)</a>&gt;</code></h4>
+<div class='docblock'><p>Implements dynamic dispatch of a resolved method according to the lookup procedure
+specified for the <code>invokevirtual</code> instruction. Method resolution depends on whether the
+method in question overrides a superclass method. (See spec for more information.)</p>
+</div><h4 id='method.is_descendant' class='method'><code>fn <a href='#method.is_descendant' class='fnname'>is_descendant</a>(&amp;self, other: &amp;<a class='struct' href='../../../rust_jvm/vm/class/struct.Class.html' title='rust_jvm::vm::class::Class'>Class</a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<div class='docblock'><p>Returns true if this class is a descendant (direct or indirect subclass) of another class.</p>
+</div><h4 id='method.initialize' class='method'><code>fn <a href='#method.initialize' class='fnname'>initialize</a>(&amp;self, class_loader: &amp;mut <a class='struct' href='../../../rust_jvm/vm/class_loader/struct.ClassLoader.html' title='rust_jvm::vm::class_loader::ClassLoader'>ClassLoader</a>)</code></h4>
+<div class='docblock'><p>Initialize the class by executing its class or interface initialization method.  Prior to
+initialization, a class or interface must be linked, that is, verified, prepared, and
+optionally resolved.</p>
+</div><h4 id='method.resolve_and_get_field' class='method'><code>fn <a href='#method.resolve_and_get_field' class='fnname'>resolve_and_get_field</a>(&amp;self, symref: &amp;<a class='struct' href='../../../rust_jvm/vm/symref/struct.Field.html' title='rust_jvm::vm::symref::Field'>Field</a>, class_loader: &amp;mut <a class='struct' href='../../../rust_jvm/vm/class_loader/struct.ClassLoader.html' title='rust_jvm::vm::class_loader::ClassLoader'>ClassLoader</a>) -&gt; <a class='enum' href='../../../rust_jvm/vm/value/enum.Value.html' title='rust_jvm::vm::value::Value'>Value</a></code></h4>
+<div class='docblock'><p>Resolves a symbolic reference to a field and reads a value from that field.</p>
+</div><h4 id='method.resolve_and_put_field' class='method'><code>fn <a href='#method.resolve_and_put_field' class='fnname'>resolve_and_put_field</a>(&amp;self, symref: &amp;<a class='struct' href='../../../rust_jvm/vm/symref/struct.Field.html' title='rust_jvm::vm::symref::Field'>Field</a>, new_value: <a class='enum' href='../../../rust_jvm/vm/value/enum.Value.html' title='rust_jvm::vm::value::Value'>Value</a>, class_loader: &amp;mut <a class='struct' href='../../../rust_jvm/vm/class_loader/struct.ClassLoader.html' title='rust_jvm::vm::class_loader::ClassLoader'>ClassLoader</a>)</code></h4>
+<div class='docblock'><p>Resolves a symbolic reference to a field and writes a new value to that field.</p>
+</div><h4 id='method.collect_instance_fields' class='method'><code>fn <a href='#method.collect_instance_fields' class='fnname'>collect_instance_fields</a>(&amp;self) -&gt; <a class='struct' href='https://doc.rust-lang.org/nightly/std/collections/hash/set/struct.HashSet.html' title='std::collections::hash::set::HashSet'>HashSet</a>&lt;<a class='struct' href='../../../rust_jvm/vm/sig/struct.Field.html' title='rust_jvm::vm::sig::Field'>Field</a>&gt;</code></h4>
+<div class='docblock'><p>Returns a set of the signatures of the fields of an instance of this class.</p>
+</div></div><h2 id='implementations'>Trait Implementations</h2><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='struct' href='../../../rust_jvm/vm/class/struct.Class.html' title='rust_jvm::vm::class::Class'>Class</a></code></h3><div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../../";
+        window.currentCrate = "rust_jvm";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../../jquery.js"></script>
+    <script src="../../../main.js"></script>
+    
+    <script defer src="../../../search-index.js"></script>
+</body>
+</html>

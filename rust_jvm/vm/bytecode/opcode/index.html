@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `opcode` mod in crate `rust_jvm`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, opcode">
+
+    <title>rust_jvm::vm::bytecode::opcode - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../../../index.html'>rust_jvm</a>::<wbr><a href='../../index.html'>vm</a>::<wbr><a href='../index.html'>bytecode</a></p><script>window.sidebarCurrent = {name: 'opcode', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content mod">
+<h1 class='fqn'><span class='in-band'>Module <a href='../../../index.html'>rust_jvm</a>::<wbr><a href='../../index.html'>vm</a>::<wbr><a href='../index.html'>bytecode</a>::<wbr><a class='mod' href=''>opcode</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-5210' class='srclink' href='../../../../src/rust_jvm/src/vm/bytecode.rs.html#5-211' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'><p>Opcodes for Java bytecode instructions.</p>
+</div><h2 id='constants' class='section-header'><a href="#constants">Constants</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.AALOAD.html'
+                                  title='rust_jvm::vm::bytecode::opcode::AALOAD'>AALOAD</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.AASTORE.html'
+                                  title='rust_jvm::vm::bytecode::opcode::AASTORE'>AASTORE</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ACONST_NULL.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ACONST_NULL'>ACONST_NULL</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ALOAD.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ALOAD'>ALOAD</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ALOAD_0.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ALOAD_0'>ALOAD_0</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ALOAD_1.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ALOAD_1'>ALOAD_1</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ALOAD_2.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ALOAD_2'>ALOAD_2</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ALOAD_3.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ALOAD_3'>ALOAD_3</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ANEWARRAY.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ANEWARRAY'>ANEWARRAY</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ARETURN.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ARETURN'>ARETURN</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ARRAYLENGTH.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ARRAYLENGTH'>ARRAYLENGTH</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ASTORE.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ASTORE'>ASTORE</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ASTORE_0.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ASTORE_0'>ASTORE_0</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ASTORE_1.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ASTORE_1'>ASTORE_1</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ASTORE_2.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ASTORE_2'>ASTORE_2</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ASTORE_3.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ASTORE_3'>ASTORE_3</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ATHROW.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ATHROW'>ATHROW</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.BALOAD.html'
+                                  title='rust_jvm::vm::bytecode::opcode::BALOAD'>BALOAD</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.BASTORE.html'
+                                  title='rust_jvm::vm::bytecode::opcode::BASTORE'>BASTORE</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.BIPUSH.html'
+                                  title='rust_jvm::vm::bytecode::opcode::BIPUSH'>BIPUSH</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.BREAKPOINT.html'
+                                  title='rust_jvm::vm::bytecode::opcode::BREAKPOINT'>BREAKPOINT</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.CALOAD.html'
+                                  title='rust_jvm::vm::bytecode::opcode::CALOAD'>CALOAD</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.CASTORE.html'
+                                  title='rust_jvm::vm::bytecode::opcode::CASTORE'>CASTORE</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.CHECKCAST.html'
+                                  title='rust_jvm::vm::bytecode::opcode::CHECKCAST'>CHECKCAST</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.D2F.html'
+                                  title='rust_jvm::vm::bytecode::opcode::D2F'>D2F</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.D2I.html'
+                                  title='rust_jvm::vm::bytecode::opcode::D2I'>D2I</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.D2L.html'
+                                  title='rust_jvm::vm::bytecode::opcode::D2L'>D2L</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DADD.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DADD'>DADD</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DALOAD.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DALOAD'>DALOAD</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DASTORE.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DASTORE'>DASTORE</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DCMPG.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DCMPG'>DCMPG</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DCMPL.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DCMPL'>DCMPL</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DCONST_0.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DCONST_0'>DCONST_0</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DCONST_1.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DCONST_1'>DCONST_1</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DDIV.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DDIV'>DDIV</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DLOAD.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DLOAD'>DLOAD</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DLOAD_0.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DLOAD_0'>DLOAD_0</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DLOAD_1.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DLOAD_1'>DLOAD_1</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DLOAD_2.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DLOAD_2'>DLOAD_2</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DLOAD_3.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DLOAD_3'>DLOAD_3</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DMUL.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DMUL'>DMUL</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DNEG.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DNEG'>DNEG</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DREM.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DREM'>DREM</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DRETURN.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DRETURN'>DRETURN</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DSTORE.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DSTORE'>DSTORE</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DSTORE_0.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DSTORE_0'>DSTORE_0</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DSTORE_1.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DSTORE_1'>DSTORE_1</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DSTORE_2.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DSTORE_2'>DSTORE_2</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DSTORE_3.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DSTORE_3'>DSTORE_3</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DSUB.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DSUB'>DSUB</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DUP.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DUP'>DUP</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DUP2.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DUP2'>DUP2</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DUP2_X1.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DUP2_X1'>DUP2_X1</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DUP2_X2.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DUP2_X2'>DUP2_X2</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DUP_X1.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DUP_X1'>DUP_X1</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.DUP_X2.html'
+                                  title='rust_jvm::vm::bytecode::opcode::DUP_X2'>DUP_X2</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.F2D.html'
+                                  title='rust_jvm::vm::bytecode::opcode::F2D'>F2D</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.F2I.html'
+                                  title='rust_jvm::vm::bytecode::opcode::F2I'>F2I</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.F2L.html'
+                                  title='rust_jvm::vm::bytecode::opcode::F2L'>F2L</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FADD.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FADD'>FADD</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FALOAD.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FALOAD'>FALOAD</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FASTORE.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FASTORE'>FASTORE</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FCMPG.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FCMPG'>FCMPG</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FCMPL.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FCMPL'>FCMPL</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FCONST_0.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FCONST_0'>FCONST_0</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FCONST_1.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FCONST_1'>FCONST_1</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FCONST_2.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FCONST_2'>FCONST_2</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FDIV.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FDIV'>FDIV</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FLOAD.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FLOAD'>FLOAD</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FLOAD_0.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FLOAD_0'>FLOAD_0</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FLOAD_1.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FLOAD_1'>FLOAD_1</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FLOAD_2.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FLOAD_2'>FLOAD_2</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FLOAD_3.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FLOAD_3'>FLOAD_3</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FMUL.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FMUL'>FMUL</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FNEG.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FNEG'>FNEG</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FREM.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FREM'>FREM</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FRETURN.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FRETURN'>FRETURN</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FSTORE.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FSTORE'>FSTORE</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FSTORE_0.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FSTORE_0'>FSTORE_0</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FSTORE_1.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FSTORE_1'>FSTORE_1</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FSTORE_2.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FSTORE_2'>FSTORE_2</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FSTORE_3.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FSTORE_3'>FSTORE_3</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.FSUB.html'
+                                  title='rust_jvm::vm::bytecode::opcode::FSUB'>FSUB</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.GETFIELD.html'
+                                  title='rust_jvm::vm::bytecode::opcode::GETFIELD'>GETFIELD</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.GETSTATIC.html'
+                                  title='rust_jvm::vm::bytecode::opcode::GETSTATIC'>GETSTATIC</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.GOTO.html'
+                                  title='rust_jvm::vm::bytecode::opcode::GOTO'>GOTO</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.GOTO_W.html'
+                                  title='rust_jvm::vm::bytecode::opcode::GOTO_W'>GOTO_W</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.I2B.html'
+                                  title='rust_jvm::vm::bytecode::opcode::I2B'>I2B</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.I2C.html'
+                                  title='rust_jvm::vm::bytecode::opcode::I2C'>I2C</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.I2D.html'
+                                  title='rust_jvm::vm::bytecode::opcode::I2D'>I2D</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.I2F.html'
+                                  title='rust_jvm::vm::bytecode::opcode::I2F'>I2F</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.I2L.html'
+                                  title='rust_jvm::vm::bytecode::opcode::I2L'>I2L</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.I2S.html'
+                                  title='rust_jvm::vm::bytecode::opcode::I2S'>I2S</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IADD.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IADD'>IADD</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IALOAD.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IALOAD'>IALOAD</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IAND.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IAND'>IAND</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IASTORE.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IASTORE'>IASTORE</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ICONST_0.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ICONST_0'>ICONST_0</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ICONST_1.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ICONST_1'>ICONST_1</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ICONST_2.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ICONST_2'>ICONST_2</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ICONST_3.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ICONST_3'>ICONST_3</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ICONST_4.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ICONST_4'>ICONST_4</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ICONST_5.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ICONST_5'>ICONST_5</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ICONST_M1.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ICONST_M1'>ICONST_M1</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IDIV.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IDIV'>IDIV</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IFEQ.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IFEQ'>IFEQ</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IFGE.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IFGE'>IFGE</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IFGT.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IFGT'>IFGT</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IFLE.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IFLE'>IFLE</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IFLT.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IFLT'>IFLT</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IFNE.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IFNE'>IFNE</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IFNONNULL.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IFNONNULL'>IFNONNULL</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IFNULL.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IFNULL'>IFNULL</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IF_ACMPEQ.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IF_ACMPEQ'>IF_ACMPEQ</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IF_ACMPNE.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IF_ACMPNE'>IF_ACMPNE</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IF_ICMPEQ.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IF_ICMPEQ'>IF_ICMPEQ</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IF_ICMPGE.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IF_ICMPGE'>IF_ICMPGE</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IF_ICMPGT.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IF_ICMPGT'>IF_ICMPGT</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IF_ICMPLE.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IF_ICMPLE'>IF_ICMPLE</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IF_ICMPLT.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IF_ICMPLT'>IF_ICMPLT</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IF_ICMPNE.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IF_ICMPNE'>IF_ICMPNE</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IINC.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IINC'>IINC</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ILOAD.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ILOAD'>ILOAD</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ILOAD_0.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ILOAD_0'>ILOAD_0</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ILOAD_1.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ILOAD_1'>ILOAD_1</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ILOAD_2.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ILOAD_2'>ILOAD_2</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ILOAD_3.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ILOAD_3'>ILOAD_3</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IMPDEP1.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IMPDEP1'>IMPDEP1</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IMPDEP2.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IMPDEP2'>IMPDEP2</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IMUL.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IMUL'>IMUL</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.INEG.html'
+                                  title='rust_jvm::vm::bytecode::opcode::INEG'>INEG</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.INSTANCEOF.html'
+                                  title='rust_jvm::vm::bytecode::opcode::INSTANCEOF'>INSTANCEOF</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.INVOKEDYNAMIC.html'
+                                  title='rust_jvm::vm::bytecode::opcode::INVOKEDYNAMIC'>INVOKEDYNAMIC</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.INVOKEINTERFACE.html'
+                                  title='rust_jvm::vm::bytecode::opcode::INVOKEINTERFACE'>INVOKEINTERFACE</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.INVOKESPECIAL.html'
+                                  title='rust_jvm::vm::bytecode::opcode::INVOKESPECIAL'>INVOKESPECIAL</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.INVOKESTATIC.html'
+                                  title='rust_jvm::vm::bytecode::opcode::INVOKESTATIC'>INVOKESTATIC</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.INVOKEVIRTUAL.html'
+                                  title='rust_jvm::vm::bytecode::opcode::INVOKEVIRTUAL'>INVOKEVIRTUAL</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IOR.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IOR'>IOR</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IREM.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IREM'>IREM</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IRETURN.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IRETURN'>IRETURN</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ISHL.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ISHL'>ISHL</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ISHR.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ISHR'>ISHR</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ISTORE.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ISTORE'>ISTORE</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ISTORE_0.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ISTORE_0'>ISTORE_0</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ISTORE_1.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ISTORE_1'>ISTORE_1</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ISTORE_2.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ISTORE_2'>ISTORE_2</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ISTORE_3.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ISTORE_3'>ISTORE_3</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.ISUB.html'
+                                  title='rust_jvm::vm::bytecode::opcode::ISUB'>ISUB</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IUSHR.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IUSHR'>IUSHR</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.IXOR.html'
+                                  title='rust_jvm::vm::bytecode::opcode::IXOR'>IXOR</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.JSR.html'
+                                  title='rust_jvm::vm::bytecode::opcode::JSR'>JSR</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.JSR_W.html'
+                                  title='rust_jvm::vm::bytecode::opcode::JSR_W'>JSR_W</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.L2D.html'
+                                  title='rust_jvm::vm::bytecode::opcode::L2D'>L2D</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.L2F.html'
+                                  title='rust_jvm::vm::bytecode::opcode::L2F'>L2F</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.L2I.html'
+                                  title='rust_jvm::vm::bytecode::opcode::L2I'>L2I</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LADD.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LADD'>LADD</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LALOAD.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LALOAD'>LALOAD</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LAND.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LAND'>LAND</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LASTORE.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LASTORE'>LASTORE</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LCMP.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LCMP'>LCMP</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LCONST_0.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LCONST_0'>LCONST_0</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LCONST_1.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LCONST_1'>LCONST_1</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LDC.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LDC'>LDC</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LDC2_W.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LDC2_W'>LDC2_W</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LDC_W.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LDC_W'>LDC_W</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LDIV.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LDIV'>LDIV</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LLOAD.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LLOAD'>LLOAD</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LLOAD_0.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LLOAD_0'>LLOAD_0</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LLOAD_1.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LLOAD_1'>LLOAD_1</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LLOAD_2.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LLOAD_2'>LLOAD_2</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LLOAD_3.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LLOAD_3'>LLOAD_3</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LMUL.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LMUL'>LMUL</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LNEG.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LNEG'>LNEG</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LOOKUPSWITCH.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LOOKUPSWITCH'>LOOKUPSWITCH</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LOR.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LOR'>LOR</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LREM.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LREM'>LREM</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LRETURN.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LRETURN'>LRETURN</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LSHL.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LSHL'>LSHL</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LSHR.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LSHR'>LSHR</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LSTORE.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LSTORE'>LSTORE</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LSTORE_0.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LSTORE_0'>LSTORE_0</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LSTORE_1.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LSTORE_1'>LSTORE_1</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LSTORE_2.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LSTORE_2'>LSTORE_2</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LSTORE_3.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LSTORE_3'>LSTORE_3</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LSUB.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LSUB'>LSUB</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LUSHR.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LUSHR'>LUSHR</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.LXOR.html'
+                                  title='rust_jvm::vm::bytecode::opcode::LXOR'>LXOR</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.MONITORENTER.html'
+                                  title='rust_jvm::vm::bytecode::opcode::MONITORENTER'>MONITORENTER</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.MONITOREXIT.html'
+                                  title='rust_jvm::vm::bytecode::opcode::MONITOREXIT'>MONITOREXIT</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.MULTIANEWARRAY.html'
+                                  title='rust_jvm::vm::bytecode::opcode::MULTIANEWARRAY'>MULTIANEWARRAY</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.NEW.html'
+                                  title='rust_jvm::vm::bytecode::opcode::NEW'>NEW</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.NEWARRAY.html'
+                                  title='rust_jvm::vm::bytecode::opcode::NEWARRAY'>NEWARRAY</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.NOP.html'
+                                  title='rust_jvm::vm::bytecode::opcode::NOP'>NOP</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.POP.html'
+                                  title='rust_jvm::vm::bytecode::opcode::POP'>POP</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.POP2.html'
+                                  title='rust_jvm::vm::bytecode::opcode::POP2'>POP2</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.PUTFIELD.html'
+                                  title='rust_jvm::vm::bytecode::opcode::PUTFIELD'>PUTFIELD</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.PUTSTATIC.html'
+                                  title='rust_jvm::vm::bytecode::opcode::PUTSTATIC'>PUTSTATIC</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.RET.html'
+                                  title='rust_jvm::vm::bytecode::opcode::RET'>RET</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.RETURN.html'
+                                  title='rust_jvm::vm::bytecode::opcode::RETURN'>RETURN</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.SALOAD.html'
+                                  title='rust_jvm::vm::bytecode::opcode::SALOAD'>SALOAD</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.SASTORE.html'
+                                  title='rust_jvm::vm::bytecode::opcode::SASTORE'>SASTORE</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.SIPUSH.html'
+                                  title='rust_jvm::vm::bytecode::opcode::SIPUSH'>SIPUSH</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.SWAP.html'
+                                  title='rust_jvm::vm::bytecode::opcode::SWAP'>SWAP</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.TABLESWITCH.html'
+                                  title='rust_jvm::vm::bytecode::opcode::TABLESWITCH'>TABLESWITCH</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='constant' href='constant.WIDE.html'
+                                  title='rust_jvm::vm::bytecode::opcode::WIDE'>WIDE</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr></table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../../../";
+        window.currentCrate = "rust_jvm";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../../../jquery.js"></script>
+    <script src="../../../../main.js"></script>
+    
+    <script defer src="../../../../search-index.js"></script>
+</body>
+</html>

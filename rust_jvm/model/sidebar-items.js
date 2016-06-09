@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["class_file","The `ClassFile` structure of §4.1."]]});

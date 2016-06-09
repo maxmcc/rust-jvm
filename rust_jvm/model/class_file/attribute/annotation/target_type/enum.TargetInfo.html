@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `TargetInfo` enum in crate `rust_jvm`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, TargetInfo">
+
+    <title>rust_jvm::model::class_file::attribute::annotation::target_type::TargetInfo - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../../../../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../../../../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../../../../../index.html'>rust_jvm</a>::<wbr><a href='../../../../index.html'>model</a>::<wbr><a href='../../../index.html'>class_file</a>::<wbr><a href='../../index.html'>attribute</a>::<wbr><a href='../index.html'>annotation</a>::<wbr><a href='index.html'>target_type</a></p><script>window.sidebarCurrent = {name: 'TargetInfo', ty: 'enum', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content enum">
+<h1 class='fqn'><span class='in-band'>Enum <a href='../../../../../index.html'>rust_jvm</a>::<wbr><a href='../../../../index.html'>model</a>::<wbr><a href='../../../index.html'>class_file</a>::<wbr><a href='../../index.html'>attribute</a>::<wbr><a href='../index.html'>annotation</a>::<wbr><a href='index.html'>target_type</a>::<wbr><a class='enum' href=''>TargetInfo</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-245' class='srclink' href='../../../../../../src/rust_jvm/src/model/class_file/attribute/annotation.rs.html#82-93' title='goto source code'>[src]</a></span></h1>
+<pre class='rust enum'>pub enum TargetInfo {
+    TypeParameter {
+        type_parameter_index: <a class='type' href='../../../../../../rust_jvm/model/class_file/type.u1.html' title='rust_jvm::model::class_file::u1'>u1</a>,
+    },
+    Supertype {
+        supertype_index: <a class='type' href='../../../../../../rust_jvm/model/class_file/type.u2.html' title='rust_jvm::model::class_file::u2'>u2</a>,
+    },
+    TypeParameterBound {
+        type_parameter_index: <a class='type' href='../../../../../../rust_jvm/model/class_file/type.u1.html' title='rust_jvm::model::class_file::u1'>u1</a>,
+        bound_index: <a class='type' href='../../../../../../rust_jvm/model/class_file/type.u1.html' title='rust_jvm::model::class_file::u1'>u1</a>,
+    },
+    Empty,
+    FormalParameter {
+        formal_parameter_index: <a class='type' href='../../../../../../rust_jvm/model/class_file/type.u1.html' title='rust_jvm::model::class_file::u1'>u1</a>,
+    },
+    Throws {
+        throws_type_index: <a class='type' href='../../../../../../rust_jvm/model/class_file/type.u2.html' title='rust_jvm::model::class_file::u2'>u2</a>,
+    },
+    LocalVariable {
+        table: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../../../../../../rust_jvm/model/class_file/attribute/annotation/struct.LocalVariableTargetInfo.html' title='rust_jvm::model::class_file::attribute::annotation::LocalVariableTargetInfo'>LocalVariableTargetInfo</a>&gt;,
+    },
+    Catch {
+        exception_table_index: <a class='type' href='../../../../../../rust_jvm/model/class_file/type.u2.html' title='rust_jvm::model::class_file::u2'>u2</a>,
+    },
+    Offset {
+        offset: <a class='type' href='../../../../../../rust_jvm/model/class_file/type.u2.html' title='rust_jvm::model::class_file::u2'>u2</a>,
+    },
+    TypeArgument {
+        offset: <a class='type' href='../../../../../../rust_jvm/model/class_file/type.u2.html' title='rust_jvm::model::class_file::u2'>u2</a>,
+        type_argument_index: <a class='type' href='../../../../../../rust_jvm/model/class_file/type.u1.html' title='rust_jvm::model::class_file::u1'>u1</a>,
+    },
+}</pre><h2 class='variants'>Variants</h2>
+<table class='variants_table'><tr><td id='variant.TypeParameter'><code>TypeParameter</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.TypeParameter.field.type_parameter_index'><code>type_parameter_index</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.Supertype'><code>Supertype</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.Supertype.field.supertype_index'><code>supertype_index</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.TypeParameterBound'><code>TypeParameterBound</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.TypeParameterBound.field.type_parameter_index'><code>type_parameter_index</code></td><td></td></tr><tr><td id='variant.TypeParameterBound.field.bound_index'><code>bound_index</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.Empty'><code>Empty</code></td><td></td><td></td></tr><tr><td id='variant.FormalParameter'><code>FormalParameter</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.FormalParameter.field.formal_parameter_index'><code>formal_parameter_index</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.Throws'><code>Throws</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.Throws.field.throws_type_index'><code>throws_type_index</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.LocalVariable'><code>LocalVariable</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.LocalVariable.field.table'><code>table</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.Catch'><code>Catch</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.Catch.field.exception_table_index'><code>exception_table_index</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.Offset'><code>Offset</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.Offset.field.offset'><code>offset</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.TypeArgument'><code>TypeArgument</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.TypeArgument.field.offset'><code>offset</code></td><td></td></tr><tr><td id='variant.TypeArgument.field.type_argument_index'><code>type_argument_index</code></td><td></td></tr></table></td><td></td></tr></table><h2 id='implementations'>Trait Implementations</h2><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='enum' href='../../../../../../rust_jvm/model/class_file/attribute/annotation/target_type/enum.TargetInfo.html' title='rust_jvm::model::class_file::attribute::annotation::target_type::TargetInfo'>TargetInfo</a></code></h3><div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../../../../../";
+        window.currentCrate = "rust_jvm";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../../../../../jquery.js"></script>
+    <script src="../../../../../../main.js"></script>
+    
+    <script defer src="../../../../../../search-index.js"></script>
+</body>
+</html>

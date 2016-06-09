@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `ClassLoader` struct in crate `rust_jvm`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, ClassLoader">
+
+    <title>rust_jvm::vm::class_loader::ClassLoader - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../../index.html'>rust_jvm</a>::<wbr><a href='../index.html'>vm</a>::<wbr><a href='index.html'>class_loader</a></p><script>window.sidebarCurrent = {name: 'ClassLoader', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content struct">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../../index.html'>rust_jvm</a>::<wbr><a href='../index.html'>vm</a>::<wbr><a href='index.html'>class_loader</a>::<wbr><a class='struct' href=''>ClassLoader</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-5713' class='srclink' href='../../../src/rust_jvm/src/vm/class_loader.rs.html#77-82' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct ClassLoader {
+    classes: <a class='struct' href='https://doc.rust-lang.org/nightly/std/collections/hash/map/struct.HashMap.html' title='std::collections::hash::map::HashMap'>HashMap</a>&lt;<a class='enum' href='../../../rust_jvm/vm/sig/enum.Class.html' title='rust_jvm::vm::sig::Class'>Class</a>, <a class='struct' href='https://doc.rust-lang.org/nightly/alloc/rc/struct.Rc.html' title='alloc::rc::Rc'>Rc</a>&lt;<a class='struct' href='../../../rust_jvm/vm/class/struct.Class.html' title='rust_jvm::vm::class::Class'>Class</a>&gt;&gt;,
+    pending: <a class='struct' href='https://doc.rust-lang.org/nightly/std/collections/hash/set/struct.HashSet.html' title='std::collections::hash::set::HashSet'>HashSet</a>&lt;<a class='enum' href='../../../rust_jvm/vm/sig/enum.Class.html' title='rust_jvm::vm::sig::Class'>Class</a>&gt;,
+}</pre><div class='docblock'><p>A class loader suitable for loading classes into the JVM.</p>
+</div><h2 class='fields'>Fields</h2>
+<table><tr class='stab '>
+                             <td id='structfield.classes'><code>classes</code></td><td><div class='docblock'><p>The classes that have already been resolved by this class loader.</p>
+</div></td></tr><tr class='stab '>
+                             <td id='structfield.pending'><code>pending</code></td><td><div class='docblock'><p>The signatures of classes that have not yet been resolved by this class loader.</p>
+</div></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl <a class='struct' href='../../../rust_jvm/vm/class_loader/struct.ClassLoader.html' title='rust_jvm::vm::class_loader::ClassLoader'>ClassLoader</a></code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>() -&gt; <a class='struct' href='../../../rust_jvm/vm/class_loader/struct.ClassLoader.html' title='rust_jvm::vm::class_loader::ClassLoader'>ClassLoader</a></code></h4>
+<h4 id='method.find_class_bytes' class='method'><code>fn <a href='#method.find_class_bytes' class='fnname'>find_class_bytes</a>(&amp;mut self, name: &amp;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>&gt;, <a class='struct' href='https://doc.rust-lang.org/nightly/std/io/error/struct.Error.html' title='std::io::error::Error'>Error</a>&gt;</code></h4>
+<div class='docblock'><p>Given a class name, read the bytes from the corresponding class file.</p>
+</div><h4 id='method.get_class_ref' class='method'><code>fn <a href='#method.get_class_ref' class='fnname'>get_class_ref</a>(rcp: &amp;<a class='struct' href='../../../rust_jvm/vm/constant_pool/struct.RuntimeConstantPool.html' title='rust_jvm::vm::constant_pool::RuntimeConstantPool'>RuntimeConstantPool</a>, index: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u16.html'>u16</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;&amp;<a class='struct' href='../../../rust_jvm/vm/symref/struct.Class.html' title='rust_jvm::vm::symref::Class'>Class</a>, <a class='enum' href='../../../rust_jvm/vm/class_loader/enum.Error.html' title='rust_jvm::vm::class_loader::Error'>Error</a>&gt;</code></h4>
+<div class='docblock'><p>Get the symbolic reference to a class from a runtime constant pool index.</p>
+</div><h4 id='method.resolve_class' class='method'><code>fn <a href='#method.resolve_class' class='fnname'>resolve_class</a>(&amp;mut self, symref: &amp;<a class='struct' href='../../../rust_jvm/vm/symref/struct.Class.html' title='rust_jvm::vm::symref::Class'>Class</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/alloc/rc/struct.Rc.html' title='alloc::rc::Rc'>Rc</a>&lt;<a class='struct' href='../../../rust_jvm/vm/class/struct.Class.html' title='rust_jvm::vm::class::Class'>Class</a>&gt;, <a class='enum' href='../../../rust_jvm/vm/class_loader/enum.Error.html' title='rust_jvm::vm::class_loader::Error'>Error</a>&gt;</code></h4>
+<div class='docblock'><p>Load a class based on a symbolic reference.</p>
+</div><h4 id='method.derive_super_class' class='method'><code>fn <a href='#method.derive_super_class' class='fnname'>derive_super_class</a>(&amp;mut self, rcp: &amp;<a class='struct' href='../../../rust_jvm/vm/constant_pool/struct.RuntimeConstantPool.html' title='rust_jvm::vm::constant_pool::RuntimeConstantPool'>RuntimeConstantPool</a>, class_file: &amp;<a class='struct' href='../../../rust_jvm/model/class_file/struct.ClassFile.html' title='rust_jvm::model::class_file::ClassFile'>ClassFile</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/alloc/rc/struct.Rc.html' title='alloc::rc::Rc'>Rc</a>&lt;<a class='struct' href='../../../rust_jvm/vm/class/struct.Class.html' title='rust_jvm::vm::class::Class'>Class</a>&gt;&gt;, <a class='enum' href='../../../rust_jvm/vm/class_loader/enum.Error.html' title='rust_jvm::vm::class_loader::Error'>Error</a>&gt;</code></h4>
+<div class='docblock'><p>Derives the super class (if it exists) of the specified class.</p>
+</div><h4 id='method.derive_class' class='method'><code>fn <a href='#method.derive_class' class='fnname'>derive_class</a>(&amp;mut self, original_name: &amp;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>, sig: &amp;<a class='enum' href='../../../rust_jvm/vm/sig/enum.Class.html' title='rust_jvm::vm::sig::Class'>Class</a>, class_bytes: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/alloc/rc/struct.Rc.html' title='alloc::rc::Rc'>Rc</a>&lt;<a class='struct' href='../../../rust_jvm/vm/class/struct.Class.html' title='rust_jvm::vm::class::Class'>Class</a>&gt;, <a class='enum' href='../../../rust_jvm/vm/class_loader/enum.Error.html' title='rust_jvm::vm::class_loader::Error'>Error</a>&gt;</code></h4>
+<div class='docblock'><p>Derives the specified class and its interfaces, but not its superclass.</p>
+</div><h4 id='method.load_class_bytes' class='method'><code>fn <a href='#method.load_class_bytes' class='fnname'>load_class_bytes</a>(&amp;mut self, name: &amp;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>, sig: &amp;<a class='enum' href='../../../rust_jvm/vm/sig/enum.Class.html' title='rust_jvm::vm::sig::Class'>Class</a>, class_bytes: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/alloc/rc/struct.Rc.html' title='alloc::rc::Rc'>Rc</a>&lt;<a class='struct' href='../../../rust_jvm/vm/class/struct.Class.html' title='rust_jvm::vm::class::Class'>Class</a>&gt;, <a class='enum' href='../../../rust_jvm/vm/class_loader/enum.Error.html' title='rust_jvm::vm::class_loader::Error'>Error</a>&gt;</code></h4>
+<div class='docblock'><p>Attempts to create, load, and prepare the specified class from the specified bytes. The
+bootstrap class loader searches the current directory for a class file with the correct
+fully-qualified name. If none is found, the bootstrap class loader then attempts to load
+the class from the standard library JAR.</p>
+
+<p>This implementation lazily resolves symbolic references, so no resolution of references
+within the loaded class is performed by this function.</p>
+
+<p>This implementation does not attempt to perform bytecode verification; we assume that any
+class files we attempt to load are valid.</p>
+</div><h4 id='method.load_class' class='method'><code>fn <a href='#method.load_class' class='fnname'>load_class</a>(&amp;mut self, sig: &amp;<a class='enum' href='../../../rust_jvm/vm/sig/enum.Class.html' title='rust_jvm::vm::sig::Class'>Class</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/alloc/rc/struct.Rc.html' title='alloc::rc::Rc'>Rc</a>&lt;<a class='struct' href='../../../rust_jvm/vm/class/struct.Class.html' title='rust_jvm::vm::class::Class'>Class</a>&gt;, <a class='enum' href='../../../rust_jvm/vm/class_loader/enum.Error.html' title='rust_jvm::vm::class_loader::Error'>Error</a>&gt;</code></h4>
+<div class='docblock'><p>Attempts to create, load, and prepare the specified class using the bootstrap class loader
+implementation. The bootstrap class loader searches the current directory for a class file
+with the correct fully-qualified name. If none is found, the bootstrap class loader then
+attempts to load the class from the standard library JAR.</p>
+
+<p>This implementation lazily resolves symbolic references, so no resolution of references
+within the loaded class is performed by this function.</p>
+
+<p>This implementation does not attempt to perform bytecode verification; we assume that any
+class files we attempt to load are valid.</p>
+</div></div><h2 id='implementations'>Trait Implementations</h2><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='struct' href='../../../rust_jvm/vm/class_loader/struct.ClassLoader.html' title='rust_jvm::vm::class_loader::ClassLoader'>ClassLoader</a></code></h3><div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../../";
+        window.currentCrate = "rust_jvm";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../../jquery.js"></script>
+    <script src="../../../main.js"></script>
+    
+    <script defer src="../../../search-index.js"></script>
+</body>
+</html>

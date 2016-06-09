@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["OneIndexedVec","Like a `std::vec::Vec`, but 1-indexed instead of 0-indexed."]]});

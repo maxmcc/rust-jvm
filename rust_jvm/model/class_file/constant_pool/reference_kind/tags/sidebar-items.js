@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["GET_FIELD",""],["GET_STATIC",""],["INVOKE_INTERFACE",""],["INVOKE_SPECIAL",""],["INVOKE_STATIC",""],["INVOKE_VIRTUAL",""],["NEW_INVOKE_SPECIAL",""],["PUT_FIELD",""],["PUT_STATIC",""]]});

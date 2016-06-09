@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["modified_utf8","Modified UTF-8 string slices."],["one_indexed_vec","A `std::vec::Vec`, but 1-indexed instead of 0-indexed."]]});

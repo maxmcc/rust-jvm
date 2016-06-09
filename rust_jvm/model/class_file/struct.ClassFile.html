@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `ClassFile` struct in crate `rust_jvm`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, ClassFile">
+
+    <title>rust_jvm::model::class_file::ClassFile - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../../index.html'>rust_jvm</a>::<wbr><a href='../index.html'>model</a>::<wbr><a href='index.html'>class_file</a></p><script>window.sidebarCurrent = {name: 'ClassFile', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content struct">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../../index.html'>rust_jvm</a>::<wbr><a href='../index.html'>model</a>::<wbr><a href='index.html'>class_file</a>::<wbr><a class='struct' href=''>ClassFile</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-1218' class='srclink' href='../../../src/rust_jvm/src/model/class_file/mod.rs.html#67-109' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct ClassFile {
+    pub minor_version: <a class='type' href='../../../rust_jvm/model/class_file/type.u2.html' title='rust_jvm::model::class_file::u2'>u2</a>,
+    pub major_version: <a class='type' href='../../../rust_jvm/model/class_file/type.u2.html' title='rust_jvm::model::class_file::u2'>u2</a>,
+    pub constant_pool: <a class='type' href='../../../rust_jvm/model/class_file/constant_pool/type.ConstantPool.html' title='rust_jvm::model::class_file::constant_pool::ConstantPool'>ConstantPool</a>,
+    pub access_flags: <a class='type' href='../../../rust_jvm/model/class_file/access_flags/class_access_flags/type.t.html' title='rust_jvm::model::class_file::access_flags::class_access_flags::t'>t</a>,
+    pub this_class: <a class='type' href='../../../rust_jvm/model/class_file/type.constant_pool_index.html' title='rust_jvm::model::class_file::constant_pool_index'>constant_pool_index</a>,
+    pub super_class: <a class='type' href='../../../rust_jvm/model/class_file/type.constant_pool_index.html' title='rust_jvm::model::class_file::constant_pool_index'>constant_pool_index</a>,
+    pub interfaces: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='type' href='../../../rust_jvm/model/class_file/type.constant_pool_index.html' title='rust_jvm::model::class_file::constant_pool_index'>constant_pool_index</a>&gt;,
+    pub fields: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../../../rust_jvm/model/class_file/struct.FieldInfo.html' title='rust_jvm::model::class_file::FieldInfo'>FieldInfo</a>&gt;,
+    pub methods: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../../../rust_jvm/model/class_file/struct.MethodInfo.html' title='rust_jvm::model::class_file::MethodInfo'>MethodInfo</a>&gt;,
+    pub attributes: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='enum' href='../../../rust_jvm/model/class_file/attribute/enum.AttributeInfo.html' title='rust_jvm::model::class_file::attribute::AttributeInfo'>AttributeInfo</a>&gt;,
+}</pre><h2 class='fields'>Fields</h2>
+<table><tr class='stab '>
+                             <td id='structfield.minor_version'><code>minor_version</code></td><td><div class='docblock'><p>Minor version number</p>
+</div></td></tr><tr class='stab '>
+                             <td id='structfield.major_version'><code>major_version</code></td><td><div class='docblock'><p>Major version number</p>
+</div></td></tr><tr class='stab '>
+                             <td id='structfield.constant_pool'><code>constant_pool</code></td><td><div class='docblock'><p>Table of structures representing various string constants, class and
+interface names, field names, and other constants. The <code>constant_pool</code>
+table is indexed from 1 to <code>constant_pool_count - 1</code>.</p>
+</div></td></tr><tr class='stab '>
+                             <td id='structfield.access_flags'><code>access_flags</code></td><td><div class='docblock'><p>Mask of flags used to denote access permissions to and properties of
+this class or interface. See the documentation for <code>ClassAccessFlags</code>
+for the interpretation of each flag.</p>
+</div></td></tr><tr class='stab '>
+                             <td id='structfield.this_class'><code>this_class</code></td><td><div class='docblock'><p>A valid index into the <code>constant_pool</code> table. The <code>constant_pool</code> entry
+at that index must be a <code>ConstantPoolInfo::Class</code> structure representing
+a valid unqualified name denoting a field.</p>
+</div></td></tr><tr class='stab '>
+                             <td id='structfield.super_class'><code>super_class</code></td><td><div class='docblock'><p>For a class, must be either zero or a valid index into the
+<code>constant_pool</code> table. If the value of <code>super_class</code> is non-zero, then
+the <code>constant_pool</code> entry at that index must be a <code>ConstantPoolInfo::Class</code>
+structure denoting the direct superclass of the class defined by this
+class file. Neither the direct superclass nor any of its superclasses
+may have the <code>ACC_FINAL</code> flag set in the <code>access_flags</code> item of its
+<code>ClassFile</code> structure.</p>
+</div></td></tr><tr class='stab '>
+                             <td id='structfield.interfaces'><code>interfaces</code></td><td><div class='docblock'><p>Each value in <code>interfaces</code> mut be a valid index into the <code>constant_pool</code>
+table. The <code>constant_pool</code> entry at each value of <code>interfaces[i]</code>, where
+<code>0 ≤ i &lt; interfaces_count</code>, must be a <code>ConstantPoolInfo::Class</code> structure
+representing an interface that is a direct superinterface of this class
+or interface type, in the left-to-right order given in the source for
+the type.</p>
+</div></td></tr><tr class='stab '>
+                             <td id='structfield.fields'><code>fields</code></td><td><div class='docblock'><p>Contains only those fields declared by this class or interface. Does not
+include items representing fields that are inherited from superclasses
+or superinterfaces.</p>
+</div></td></tr><tr class='stab '>
+                             <td id='structfield.methods'><code>methods</code></td><td><div class='docblock'><p>Contains only those methods declared by this class or interface. Does
+not include items representing methods that are inherited from
+superclasses or superinterfaces.</p>
+</div></td></tr><tr class='stab '>
+                             <td id='structfield.attributes'><code>attributes</code></td><td><div class='docblock'><p>Contains the attributes of this class.</p>
+</div></td></tr></table><h2 id='implementations'>Trait Implementations</h2><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='struct' href='../../../rust_jvm/model/class_file/struct.ClassFile.html' title='rust_jvm::model::class_file::ClassFile'>ClassFile</a></code></h3><div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../../";
+        window.currentCrate = "rust_jvm";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../../jquery.js"></script>
+    <script src="../../../main.js"></script>
+    
+    <script defer src="../../../search-index.js"></script>
+</body>
+</html>

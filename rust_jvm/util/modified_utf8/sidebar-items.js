@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["from_modified_utf8","Converts a slice of bytes in modified UTF-8 encoding to a string slice."]],"struct":[["ModifiedUtf8Error","Errors which can occur when attempting to interpret a sequence of `u8` as a modified UTF-8 string."]]});

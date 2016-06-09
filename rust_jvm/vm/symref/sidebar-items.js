@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Class","A symbolic reference to a class constant pool entry."],["Field","A symbolic reference to a field constant pool entry."],["Method","A symbolic reference to a method constant pool entry."]]});

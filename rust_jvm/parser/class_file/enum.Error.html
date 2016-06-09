@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Error` enum in crate `rust_jvm`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Error">
+
+    <title>rust_jvm::parser::class_file::Error - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../../index.html'>rust_jvm</a>::<wbr><a href='../index.html'>parser</a>::<wbr><a href='index.html'>class_file</a></p><script>window.sidebarCurrent = {name: 'Error', ty: 'enum', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content enum">
+<h1 class='fqn'><span class='in-band'>Enum <a href='../../index.html'>rust_jvm</a>::<wbr><a href='../index.html'>parser</a>::<wbr><a href='index.html'>class_file</a>::<wbr><a class='enum' href=''>Error</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-1265' class='srclink' href='../../../src/rust_jvm/src/parser/class_file.rs.html#25-88' title='goto source code'>[src]</a></span></h1>
+<pre class='rust enum'>pub enum Error {
+    ClassFile,
+    Magic,
+    ConstantPool {
+        constant_pool_count: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    ConstantPoolEntry {
+        index: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    ConstantPoolInfo,
+    UnknownConstantPoolTag {
+        tag: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>,
+    },
+    ConstantPoolIndexOutOfBounds {
+        index: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    UnexpectedConstantPoolType {
+        index: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+        expected: <a class='enum' href='../../../rust_jvm/model/class_file/constant_pool/enum.Tag.html' title='rust_jvm::model::class_file::constant_pool::Tag'>Tag</a>,
+        actual: <a class='enum' href='../../../rust_jvm/model/class_file/constant_pool/enum.Tag.html' title='rust_jvm::model::class_file::constant_pool::Tag'>Tag</a>,
+    },
+    IllegalModifiedUtf8 {
+        byte: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>,
+    },
+    ModifiedUtf8 {
+        length: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    UnknownConstantPoolMethodReferenceTag {
+        tag: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>,
+    },
+    Interfaces {
+        interfaces_count: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    Fields {
+        fields_count: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    FieldInfo,
+    FieldAttributes {
+        attributes_count: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    Methods {
+        methods_count: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    MethodInfo,
+    MethodAttributes {
+        attributes_count: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    ClassAttributes {
+        attributes_count: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    Attribute,
+    AttributeInfo {
+        attribute_name: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>,
+        attribute_name_index: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+        attribute_length: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    AttributeInfoNameIndexOutOfBounds {
+        attribute_name_index: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    CodeAttributes {
+        attributes_count: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    ExceptionTableEntry,
+    StackMapTable {
+        number_of_entries: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    StackMapFrame,
+    UnknownStackMapFrameTag {
+        tag: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>,
+    },
+    ReservedStackMapFrameTag {
+        tag: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>,
+    },
+    VerificationTypeInfo,
+    UnknownVerificationTypeInfoTag {
+        tag: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>,
+    },
+    InnerClasses {
+        number_of_classes: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    InnerClass,
+    Signature,
+    MethodParameters {
+        parameters_count: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    MethodParameter,
+    ElementValuePair,
+    ElementValuePairs {
+        num_element_value_pairs: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    ElementValue,
+    UnknownElementValueTag {
+        tag: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>,
+    },
+    ElementValueArray {
+        num_values: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    Annotations {
+        num_annotations: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    ParameterAnnotations {
+        num_parameters: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    TypeAnnotations {
+        num_annotations: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    UnknownTargetTypeTag {
+        tag: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>,
+    },
+    LocalVariableTarget {
+        table_length: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    TypePath {
+        path_length: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    SourceFile,
+    SourceDebugExtension,
+    LineNumberTable {
+        table_length: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    LineNumberInfo,
+    LocalVariableTable {
+        table_length: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    LocalVariableInfo,
+    LocalVariableTypeTable {
+        table_length: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>,
+    },
+    LocalVariableTypeInfo,
+}</pre><h2 class='variants'>Variants</h2>
+<table class='variants_table'><tr><td id='variant.ClassFile'><code>ClassFile</code></td><td></td><td></td></tr><tr><td id='variant.Magic'><code>Magic</code></td><td></td><td></td></tr><tr><td id='variant.ConstantPool'><code>ConstantPool</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.ConstantPool.field.constant_pool_count'><code>constant_pool_count</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.ConstantPoolEntry'><code>ConstantPoolEntry</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.ConstantPoolEntry.field.index'><code>index</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.ConstantPoolInfo'><code>ConstantPoolInfo</code></td><td></td><td></td></tr><tr><td id='variant.UnknownConstantPoolTag'><code>UnknownConstantPoolTag</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.UnknownConstantPoolTag.field.tag'><code>tag</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.ConstantPoolIndexOutOfBounds'><code>ConstantPoolIndexOutOfBounds</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.ConstantPoolIndexOutOfBounds.field.index'><code>index</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.UnexpectedConstantPoolType'><code>UnexpectedConstantPoolType</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.UnexpectedConstantPoolType.field.index'><code>index</code></td><td></td></tr><tr><td id='variant.UnexpectedConstantPoolType.field.expected'><code>expected</code></td><td></td></tr><tr><td id='variant.UnexpectedConstantPoolType.field.actual'><code>actual</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.IllegalModifiedUtf8'><code>IllegalModifiedUtf8</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.IllegalModifiedUtf8.field.byte'><code>byte</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.ModifiedUtf8'><code>ModifiedUtf8</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.ModifiedUtf8.field.length'><code>length</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.UnknownConstantPoolMethodReferenceTag'><code>UnknownConstantPoolMethodReferenceTag</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.UnknownConstantPoolMethodReferenceTag.field.tag'><code>tag</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.Interfaces'><code>Interfaces</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.Interfaces.field.interfaces_count'><code>interfaces_count</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.Fields'><code>Fields</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.Fields.field.fields_count'><code>fields_count</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.FieldInfo'><code>FieldInfo</code></td><td></td><td></td></tr><tr><td id='variant.FieldAttributes'><code>FieldAttributes</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.FieldAttributes.field.attributes_count'><code>attributes_count</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.Methods'><code>Methods</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.Methods.field.methods_count'><code>methods_count</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.MethodInfo'><code>MethodInfo</code></td><td></td><td></td></tr><tr><td id='variant.MethodAttributes'><code>MethodAttributes</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.MethodAttributes.field.attributes_count'><code>attributes_count</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.ClassAttributes'><code>ClassAttributes</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.ClassAttributes.field.attributes_count'><code>attributes_count</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.Attribute'><code>Attribute</code></td><td></td><td></td></tr><tr><td id='variant.AttributeInfo'><code>AttributeInfo</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.AttributeInfo.field.attribute_name'><code>attribute_name</code></td><td></td></tr><tr><td id='variant.AttributeInfo.field.attribute_name_index'><code>attribute_name_index</code></td><td></td></tr><tr><td id='variant.AttributeInfo.field.attribute_length'><code>attribute_length</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.AttributeInfoNameIndexOutOfBounds'><code>AttributeInfoNameIndexOutOfBounds</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.AttributeInfoNameIndexOutOfBounds.field.attribute_name_index'><code>attribute_name_index</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.CodeAttributes'><code>CodeAttributes</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.CodeAttributes.field.attributes_count'><code>attributes_count</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.ExceptionTableEntry'><code>ExceptionTableEntry</code></td><td></td><td></td></tr><tr><td id='variant.StackMapTable'><code>StackMapTable</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.StackMapTable.field.number_of_entries'><code>number_of_entries</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.StackMapFrame'><code>StackMapFrame</code></td><td></td><td></td></tr><tr><td id='variant.UnknownStackMapFrameTag'><code>UnknownStackMapFrameTag</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.UnknownStackMapFrameTag.field.tag'><code>tag</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.ReservedStackMapFrameTag'><code>ReservedStackMapFrameTag</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.ReservedStackMapFrameTag.field.tag'><code>tag</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.VerificationTypeInfo'><code>VerificationTypeInfo</code></td><td></td><td></td></tr><tr><td id='variant.UnknownVerificationTypeInfoTag'><code>UnknownVerificationTypeInfoTag</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.UnknownVerificationTypeInfoTag.field.tag'><code>tag</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.InnerClasses'><code>InnerClasses</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.InnerClasses.field.number_of_classes'><code>number_of_classes</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.InnerClass'><code>InnerClass</code></td><td></td><td></td></tr><tr><td id='variant.Signature'><code>Signature</code></td><td></td><td></td></tr><tr><td id='variant.MethodParameters'><code>MethodParameters</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.MethodParameters.field.parameters_count'><code>parameters_count</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.MethodParameter'><code>MethodParameter</code></td><td></td><td></td></tr><tr><td id='variant.ElementValuePair'><code>ElementValuePair</code></td><td></td><td></td></tr><tr><td id='variant.ElementValuePairs'><code>ElementValuePairs</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.ElementValuePairs.field.num_element_value_pairs'><code>num_element_value_pairs</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.ElementValue'><code>ElementValue</code></td><td></td><td></td></tr><tr><td id='variant.UnknownElementValueTag'><code>UnknownElementValueTag</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.UnknownElementValueTag.field.tag'><code>tag</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.ElementValueArray'><code>ElementValueArray</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.ElementValueArray.field.num_values'><code>num_values</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.Annotations'><code>Annotations</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.Annotations.field.num_annotations'><code>num_annotations</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.ParameterAnnotations'><code>ParameterAnnotations</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.ParameterAnnotations.field.num_parameters'><code>num_parameters</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.TypeAnnotations'><code>TypeAnnotations</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.TypeAnnotations.field.num_annotations'><code>num_annotations</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.UnknownTargetTypeTag'><code>UnknownTargetTypeTag</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.UnknownTargetTypeTag.field.tag'><code>tag</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.LocalVariableTarget'><code>LocalVariableTarget</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.LocalVariableTarget.field.table_length'><code>table_length</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.TypePath'><code>TypePath</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.TypePath.field.path_length'><code>path_length</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.SourceFile'><code>SourceFile</code></td><td></td><td></td></tr><tr><td id='variant.SourceDebugExtension'><code>SourceDebugExtension</code></td><td></td><td></td></tr><tr><td id='variant.LineNumberTable'><code>LineNumberTable</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.LineNumberTable.field.table_length'><code>table_length</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.LineNumberInfo'><code>LineNumberInfo</code></td><td></td><td></td></tr><tr><td id='variant.LocalVariableTable'><code>LocalVariableTable</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.LocalVariableTable.field.table_length'><code>table_length</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.LocalVariableInfo'><code>LocalVariableInfo</code></td><td></td><td></td></tr><tr><td id='variant.LocalVariableTypeTable'><code>LocalVariableTypeTable</code></td><td><h3 class='fields'>Fields</h3>
+
+                           <table><tr><td id='variant.LocalVariableTypeTable.field.table_length'><code>table_length</code></td><td></td></tr></table></td><td></td></tr><tr><td id='variant.LocalVariableTypeInfo'><code>LocalVariableTypeInfo</code></td><td></td><td></td></tr></table><h2 id='implementations'>Trait Implementations</h2><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='enum' href='../../../rust_jvm/parser/class_file/enum.Error.html' title='rust_jvm::parser::class_file::Error'>Error</a></code></h3><div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../../";
+        window.currentCrate = "rust_jvm";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../../jquery.js"></script>
+    <script src="../../../main.js"></script>
+    
+    <script defer src="../../../search-index.js"></script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `class_file` mod in crate `rust_jvm`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, class_file">
+
+    <title>rust_jvm::model::class_file - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../../index.html'>rust_jvm</a>::<wbr><a href='../index.html'>model</a></p><script>window.sidebarCurrent = {name: 'class_file', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content mod">
+<h1 class='fqn'><span class='in-band'>Module <a href='../../index.html'>rust_jvm</a>::<wbr><a href='../index.html'>model</a>::<wbr><a class='mod' href=''>class_file</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-30' class='srclink' href='../../../src/rust_jvm/src/model/class_file/mod.rs.html#1-109' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'><p>The <code>ClassFile</code> structure of
+<a href="https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.1">§4.1</a>.</p>
+</div><h2 id='reexports' class='section-header'><a href="#reexports">Reexports</a></h2>
+<table><tr><td><code>pub use self::<a class='mod'
+                                       href='./access_flags/index.html'>access_flags</a>::<a class='mod' href='../../../rust_jvm/model/class_file/access_flags/class_access_flags/index.html' title='rust_jvm::model::class_file::access_flags::class_access_flags'>class_access_flags</a>;</code></td></tr><tr><td><code>pub use self::<a class='mod'
+                                       href='./access_flags/index.html'>access_flags</a>::<a class='mod' href='../../../rust_jvm/model/class_file/access_flags/field_access_flags/index.html' title='rust_jvm::model::class_file::access_flags::field_access_flags'>field_access_flags</a>;</code></td></tr><tr><td><code>pub use self::<a class='mod'
+                                       href='./access_flags/index.html'>access_flags</a>::<a class='mod' href='../../../rust_jvm/model/class_file/access_flags/method_access_flags/index.html' title='rust_jvm::model::class_file::access_flags::method_access_flags'>method_access_flags</a>;</code></td></tr><tr><td><code>pub use self::<a class='mod'
+                                       href='./attribute/index.html'>attribute</a>::<a class='enum' href='../../../rust_jvm/model/class_file/attribute/enum.AttributeInfo.html' title='rust_jvm::model::class_file::attribute::AttributeInfo'>AttributeInfo</a>;</code></td></tr><tr><td><code>pub use self::<a class='mod'
+                                       href='./constant_pool/index.html'>constant_pool</a>::<a class='enum' href='../../../rust_jvm/model/class_file/constant_pool/enum.ConstantPoolInfo.html' title='rust_jvm::model::class_file::constant_pool::ConstantPoolInfo'>ConstantPoolInfo</a>;</code></td></tr><tr><td><code>pub use self::<a class='mod'
+                                       href='./constant_pool/index.html'>constant_pool</a>::<a class='type' href='../../../rust_jvm/model/class_file/constant_pool/type.ConstantPool.html' title='rust_jvm::model::class_file::constant_pool::ConstantPool'>ConstantPool</a>;</code></td></tr></table><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='access_flags/index.html'
+                                  title='rust_jvm::model::class_file::access_flags'>access_flags</a></td>
+                           <td class='docblock short'>
+                                <p>Access flags for various structures in
+<a href="https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.1">§4.1</a>.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='attribute/index.html'
+                                  title='rust_jvm::model::class_file::attribute'>attribute</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='constant_pool/index.html'
+                                  title='rust_jvm::model::class_file::constant_pool'>constant_pool</a></td>
+                           <td class='docblock short'>
+                                <p>Contains structures to describe the constant pool
+<a href="https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.4">§4.4</a>.</p>
+                           </td>
+                       </tr></table><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.ClassFile.html'
+                                  title='rust_jvm::model::class_file::ClassFile'>ClassFile</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.FieldInfo.html'
+                                  title='rust_jvm::model::class_file::FieldInfo'>FieldInfo</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.MethodInfo.html'
+                                  title='rust_jvm::model::class_file::MethodInfo'>MethodInfo</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr></table><h2 id='types' class='section-header'><a href="#types">Type Definitions</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class='type' href='type.constant_pool_index.html'
+                                  title='rust_jvm::model::class_file::constant_pool_index'>constant_pool_index</a></td>
+                           <td class='docblock short'>
+                                <p>Represents an index into the constant pool.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='type' href='type.u1.html'
+                                  title='rust_jvm::model::class_file::u1'>u1</a></td>
+                           <td class='docblock short'>
+                                <p>Represents an unsigned one-byte quantity.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='type' href='type.u2.html'
+                                  title='rust_jvm::model::class_file::u2'>u2</a></td>
+                           <td class='docblock short'>
+                                <p>Represents an unsigned two-byte quantity.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='type' href='type.u4.html'
+                                  title='rust_jvm::model::class_file::u4'>u4</a></td>
+                           <td class='docblock short'>
+                                <p>Represents an unsigned four-byte quantity.</p>
+                           </td>
+                       </tr></table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../../";
+        window.currentCrate = "rust_jvm";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../../jquery.js"></script>
+    <script src="../../../main.js"></script>
+    
+    <script defer src="../../../search-index.js"></script>
+</body>
+</html>

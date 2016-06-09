@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["class_file","A parser for a Java class file."],["nom_support","Workaround to get sane nested errors from `nom`. The nom library does not provide parsers that can have controllable backtracking behavior, so we need to hack it in. Follows #160."]]});

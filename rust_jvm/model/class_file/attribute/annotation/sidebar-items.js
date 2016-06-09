@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["element_value",""],["target_type",""]],"struct":[["Annotation",""],["ElementValuePair",""],["LocalVariableTargetInfo",""],["TypeAnnotation",""],["TypePath",""],["TypePathPart",""]]});

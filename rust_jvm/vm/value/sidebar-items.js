@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Value","A value in the Java virtual machine."]],"struct":[["Array","An instance of an array object."],["Scalar","An instance of a non-array object."]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["ConstantPoolInfo",""],["MethodReference",""],["Tag","Type-safe representation of constant pool tags Table 4.4-A."]],"mod":[["reference_kind",""],["tags","Values of constant pool tags Table 4.4-A."]],"type":[["ConstantPool","The constant pool §4.4."],["constant_pool_index",""]]});

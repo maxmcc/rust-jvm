@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `rust_jvm` crate.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, rust_jvm">
+
+    <title>rust_jvm - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'></p><script>window.sidebarCurrent = {name: 'rust_jvm', ty: 'mod', relpath: '../'};</script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content mod">
+<h1 class='fqn'><span class='in-band'>Crate <a class='mod' href=''>rust_jvm</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-0' class='srclink' href='../src/rust_jvm/src/lib.rs.html#1-15' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'><p>This is a documentation comment for our library.</p>
+</div><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='logging/index.html'
+                                  title='rust_jvm::logging'>logging</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='model/index.html'
+                                  title='rust_jvm::model'>model</a></td>
+                           <td class='docblock short'>
+                                <p>Structures for the <a href="https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html">Java SE 8 JVM class file
+format</a>.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='parser/index.html'
+                                  title='rust_jvm::parser'>parser</a></td>
+                           <td class='docblock short'>
+                                <p>Contains a parser for a Java class file.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='util/index.html'
+                                  title='rust_jvm::util'>util</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='vm/index.html'
+                                  title='rust_jvm::vm'>vm</a></td>
+                           <td class='docblock short'>
+                                <p>The public interface for the Java virtual machine.</p>
+                           </td>
+                       </tr></table><h2 id='macros' class='section-header'><a href="#macros">Macros</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class='macro' href='macro.c!.html'
+                                  title='rust_jvm::c!'>c!</a></td>
+                           <td class='docblock short'>
+                                <p>Converts a backtracking-controllable parser to a nom parser that will have the correct
+backtracking behavior.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='macro' href='macro.catching!.html'
+                                  title='rust_jvm::catching!'>catching!</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='macro' href='macro.catching_at!.html'
+                                  title='rust_jvm::catching_at!'>catching_at!</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='macro' href='macro.custom_error!.html'
+                                  title='rust_jvm::custom_error!'>custom_error!</a></td>
+                           <td class='docblock short'>
+                                <p>Convenience for creating a custom nom error <code>nom::Err::Code(nom::ErrorKind::Custom($err))</code>.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='macro' href='macro.cut!.html'
+                                  title='rust_jvm::cut!'>cut!</a></td>
+                           <td class='docblock short'>
+                                <p><code>cut!(nom::ErrorKind&lt;E&gt;, I -&gt; nom::IResult&lt;I, O, E&gt;) =&gt; Err&lt;_, nom::Err&lt;I, E&gt;&gt; OR nom::IResult::Done&lt;I, O, E&gt; OR IResult::Incomplete&lt;_&gt;</code>
+Prevents backtracking out of the specified nom parser.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='macro' href='macro.done!.html'
+                                  title='rust_jvm::done!'>done!</a></td>
+                           <td class='docblock short'>
+                                <p><code>done!(O) =&gt; nom::IResult::Done&lt;I, O&gt;</code> wraps the specified expression in <code>nom::IResult::Done</code>.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='macro' href='macro.eprintln!.html'
+                                  title='rust_jvm::eprintln!'>eprintln!</a></td>
+                           <td class='docblock short'>
+                                <p>Prints to standard error.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='macro' href='macro.n!.html'
+                                  title='rust_jvm::n!'>n!</a></td>
+                           <td class='docblock short'>
+                                <p>Declares a parser (with a body of type <code>nom::IResult</code>) that can be controlled for backtracking
+by using <code>c!</code> and <code>cut!</code>. The return type is <code>std::result::Result&lt;nom::IResult, nom::Err&lt;I, E&gt;&gt;</code>. If the parser returns <code>std::result::Result::Ok</code>, then backtracking occurs. If the parser
+returns <code>std::result::Result::Err</code>, then backtracking does not occur.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='macro' href='macro.p_add_error!.html'
+                                  title='rust_jvm::p_add_error!'>p_add_error!</a></td>
+                           <td class='docblock short'>
+                                <p>Adds a custom error if the child nom parser fails.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='macro' href='macro.p_cut!.html'
+                                  title='rust_jvm::p_cut!'>p_cut!</a></td>
+                           <td class='docblock short'>
+                                <p><code>p_cut!(E, I -&gt; nom::IResult&lt;I, O, E&gt;) =&gt; Err&lt;_, nom::Err&lt;I, E&gt;&gt; OR IResult::Done&lt;I, O&gt; OR IResult::Incomplete&lt;_&gt;</code>
+Like <code>cut!</code>, but with a custom error type.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='macro' href='macro.p_fail!.html'
+                                  title='rust_jvm::p_fail!'>p_fail!</a></td>
+                           <td class='docblock short'>
+                                <p>Returns a custom error for a backtracking-controllable parser.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='macro' href='macro.p_named!.html'
+                                  title='rust_jvm::p_named!'>p_named!</a></td>
+                           <td class='docblock short'>
+                                <p>Declares a parser (with a body of type <code>std::result::Result&lt;nom::IResult, nom::Err&lt;I, E&gt;&gt;</code>)
+that can be controlled for backtracking by using <code>c!</code> and <code>cut!</code>. The return type is
+<code>std::result::Result&lt;nom::IResult, nom::Err&lt;I, E&gt;&gt;</code>. If the parser returns
+<code>std::result::Result::Ok</code>, then backtracking occurs. If the parser returns
+<code>std::result::Result::Err</code>, then backtracking does not occur.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='macro' href='macro.p_nom_error!.html'
+                                  title='rust_jvm::p_nom_error!'>p_nom_error!</a></td>
+                           <td class='docblock short'>
+                                <p>Returns a custom error for a nom parser.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='macro' href='macro.p_try!.html'
+                                  title='rust_jvm::p_try!'>p_try!</a></td>
+                           <td class='docblock short'>
+                                <p>Binds monadically without backtracking a backtracking-controllable parser.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='macro' href='macro.p_unwrap!.html'
+                                  title='rust_jvm::p_unwrap!'>p_unwrap!</a></td>
+                           <td class='docblock short'>
+                                <p>Binds monadically without backtracking the result of a backtracking-controllable parser.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='macro' href='macro.p_wrap_nom!.html'
+                                  title='rust_jvm::p_wrap_nom!'>p_wrap_nom!</a></td>
+                           <td class='docblock short'>
+                                <p>Wraps a nom parser (returning <code>nom::IResult</code>) to produce a parser that does not
+backtrack on error.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='macro' href='macro.with_warn!.html'
+                                  title='rust_jvm::with_warn!'>with_warn!</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='macro' href='macro.wrap_nom!.html'
+                                  title='rust_jvm::wrap_nom!'>wrap_nom!</a></td>
+                           <td class='docblock short'>
+                                <p>Wraps the result of a nom parser (<code>nom::IResult</code>) to be non-backtracking.</p>
+                           </td>
+                       </tr></table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "rust_jvm";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../jquery.js"></script>
+    <script src="../main.js"></script>
+    
+    <script defer src="../search-index.js"></script>
+</body>
+</html>

@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="Source to the Rust file `src/vm/bytecode.rs`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang">
+
+    <title>bytecode.rs.html -- source</title>
+
+    <link rel="stylesheet" type="text/css" href="../../../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content source"><pre class="line-numbers"><span id="1">  1</span>
+<span id="2">  2</span>
+<span id="3">  3</span>
+<span id="4">  4</span>
+<span id="5">  5</span>
+<span id="6">  6</span>
+<span id="7">  7</span>
+<span id="8">  8</span>
+<span id="9">  9</span>
+<span id="10"> 10</span>
+<span id="11"> 11</span>
+<span id="12"> 12</span>
+<span id="13"> 13</span>
+<span id="14"> 14</span>
+<span id="15"> 15</span>
+<span id="16"> 16</span>
+<span id="17"> 17</span>
+<span id="18"> 18</span>
+<span id="19"> 19</span>
+<span id="20"> 20</span>
+<span id="21"> 21</span>
+<span id="22"> 22</span>
+<span id="23"> 23</span>
+<span id="24"> 24</span>
+<span id="25"> 25</span>
+<span id="26"> 26</span>
+<span id="27"> 27</span>
+<span id="28"> 28</span>
+<span id="29"> 29</span>
+<span id="30"> 30</span>
+<span id="31"> 31</span>
+<span id="32"> 32</span>
+<span id="33"> 33</span>
+<span id="34"> 34</span>
+<span id="35"> 35</span>
+<span id="36"> 36</span>
+<span id="37"> 37</span>
+<span id="38"> 38</span>
+<span id="39"> 39</span>
+<span id="40"> 40</span>
+<span id="41"> 41</span>
+<span id="42"> 42</span>
+<span id="43"> 43</span>
+<span id="44"> 44</span>
+<span id="45"> 45</span>
+<span id="46"> 46</span>
+<span id="47"> 47</span>
+<span id="48"> 48</span>
+<span id="49"> 49</span>
+<span id="50"> 50</span>
+<span id="51"> 51</span>
+<span id="52"> 52</span>
+<span id="53"> 53</span>
+<span id="54"> 54</span>
+<span id="55"> 55</span>
+<span id="56"> 56</span>
+<span id="57"> 57</span>
+<span id="58"> 58</span>
+<span id="59"> 59</span>
+<span id="60"> 60</span>
+<span id="61"> 61</span>
+<span id="62"> 62</span>
+<span id="63"> 63</span>
+<span id="64"> 64</span>
+<span id="65"> 65</span>
+<span id="66"> 66</span>
+<span id="67"> 67</span>
+<span id="68"> 68</span>
+<span id="69"> 69</span>
+<span id="70"> 70</span>
+<span id="71"> 71</span>
+<span id="72"> 72</span>
+<span id="73"> 73</span>
+<span id="74"> 74</span>
+<span id="75"> 75</span>
+<span id="76"> 76</span>
+<span id="77"> 77</span>
+<span id="78"> 78</span>
+<span id="79"> 79</span>
+<span id="80"> 80</span>
+<span id="81"> 81</span>
+<span id="82"> 82</span>
+<span id="83"> 83</span>
+<span id="84"> 84</span>
+<span id="85"> 85</span>
+<span id="86"> 86</span>
+<span id="87"> 87</span>
+<span id="88"> 88</span>
+<span id="89"> 89</span>
+<span id="90"> 90</span>
+<span id="91"> 91</span>
+<span id="92"> 92</span>
+<span id="93"> 93</span>
+<span id="94"> 94</span>
+<span id="95"> 95</span>
+<span id="96"> 96</span>
+<span id="97"> 97</span>
+<span id="98"> 98</span>
+<span id="99"> 99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+<span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
+<span id="197">197</span>
+<span id="198">198</span>
+<span id="199">199</span>
+<span id="200">200</span>
+<span id="201">201</span>
+<span id="202">202</span>
+<span id="203">203</span>
+<span id="204">204</span>
+<span id="205">205</span>
+<span id="206">206</span>
+<span id="207">207</span>
+<span id="208">208</span>
+<span id="209">209</span>
+<span id="210">210</span>
+<span id="211">211</span>
+</pre><pre class='rust '>
+<span class='doccomment'>//! The Java bytecode.</span>
+
+<span class='attribute'>#[<span class='ident'>allow</span>(<span class='ident'>dead_code</span>)]</span>
+<span class='doccomment'>/// Opcodes for Java bytecode instructions.</span>
+<span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>opcode</span> {
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>NOP</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x00</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ACONST_NULL</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x01</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ICONST_M1</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x02</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ICONST_0</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x03</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ICONST_1</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x04</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ICONST_2</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x05</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ICONST_3</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x06</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ICONST_4</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x07</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ICONST_5</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x08</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LCONST_0</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x09</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LCONST_1</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x0a</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FCONST_0</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x0b</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FCONST_1</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x0c</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FCONST_2</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x0d</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DCONST_0</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x0e</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DCONST_1</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x0f</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>BIPUSH</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x10</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>SIPUSH</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x11</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LDC</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x12</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LDC_W</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x13</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LDC2_W</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x14</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ILOAD</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x15</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LLOAD</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x16</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FLOAD</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x17</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DLOAD</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x18</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ALOAD</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x19</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ILOAD_0</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x1a</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ILOAD_1</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x1b</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ILOAD_2</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x1c</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ILOAD_3</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x1d</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LLOAD_0</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x1e</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LLOAD_1</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x1f</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LLOAD_2</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x20</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LLOAD_3</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x21</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FLOAD_0</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x22</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FLOAD_1</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x23</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FLOAD_2</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x24</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FLOAD_3</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x25</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DLOAD_0</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x26</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DLOAD_1</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x27</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DLOAD_2</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x28</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DLOAD_3</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x29</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ALOAD_0</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x2a</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ALOAD_1</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x2b</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ALOAD_2</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x2c</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ALOAD_3</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x2d</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IALOAD</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x2e</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LALOAD</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x2f</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FALOAD</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x30</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DALOAD</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x31</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>AALOAD</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x32</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>BALOAD</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x33</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>CALOAD</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x34</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>SALOAD</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x35</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ISTORE</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x36</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LSTORE</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x37</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FSTORE</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x38</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DSTORE</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x39</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ASTORE</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x3a</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ISTORE_0</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x3b</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ISTORE_1</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x3c</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ISTORE_2</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x3d</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ISTORE_3</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x3e</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LSTORE_0</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x3f</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LSTORE_1</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x40</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LSTORE_2</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x41</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LSTORE_3</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x42</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FSTORE_0</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x43</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FSTORE_1</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x44</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FSTORE_2</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x45</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FSTORE_3</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x46</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DSTORE_0</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x47</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DSTORE_1</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x48</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DSTORE_2</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x49</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DSTORE_3</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x4a</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ASTORE_0</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x4b</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ASTORE_1</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x4c</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ASTORE_2</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x4d</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ASTORE_3</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x4e</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IASTORE</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x4f</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LASTORE</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x50</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FASTORE</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x51</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DASTORE</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x52</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>AASTORE</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x53</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>BASTORE</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x54</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>CASTORE</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x55</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>SASTORE</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x56</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>POP</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x57</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>POP2</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x58</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DUP</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x59</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DUP_X1</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x5a</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DUP_X2</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x5b</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DUP2</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x5c</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DUP2_X1</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x5d</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DUP2_X2</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x5e</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>SWAP</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x5f</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IADD</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x60</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LADD</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x61</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FADD</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x62</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DADD</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x63</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ISUB</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x64</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LSUB</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x65</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FSUB</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x66</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DSUB</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x67</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IMUL</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x68</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LMUL</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x69</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FMUL</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x6a</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DMUL</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x6b</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IDIV</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x6c</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LDIV</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x6d</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FDIV</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x6e</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DDIV</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x6f</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IREM</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x70</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LREM</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x71</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FREM</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x72</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DREM</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x73</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>INEG</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x74</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LNEG</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x75</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FNEG</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x76</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DNEG</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x77</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ISHL</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x78</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LSHL</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x79</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ISHR</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x7a</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LSHR</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x7b</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IUSHR</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x7c</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LUSHR</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x7d</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IAND</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x7e</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LAND</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x7f</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IOR</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x80</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LOR</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x81</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IXOR</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x82</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LXOR</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x83</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IINC</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x84</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>I2L</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x85</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>I2F</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x86</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>I2D</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x87</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>L2I</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x88</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>L2F</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x89</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>L2D</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x8a</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>F2I</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x8b</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>F2L</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x8c</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>F2D</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x8d</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>D2I</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x8e</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>D2L</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x8f</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>D2F</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x90</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>I2B</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x91</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>I2C</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x92</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>I2S</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x93</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LCMP</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x94</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FCMPL</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x95</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FCMPG</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x96</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DCMPL</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x97</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DCMPG</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x98</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IFEQ</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x99</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IFNE</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x9a</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IFLT</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x9b</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IFGE</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x9c</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IFGT</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x9d</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IFLE</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x9e</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IF_ICMPEQ</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0x9f</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IF_ICMPNE</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xa0</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IF_ICMPLT</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xa1</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IF_ICMPGE</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xa2</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IF_ICMPGT</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xa3</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IF_ICMPLE</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xa4</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IF_ACMPEQ</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xa5</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IF_ACMPNE</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xa6</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>GOTO</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xa7</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>JSR</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xa8</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>RET</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xa9</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>TABLESWITCH</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xaa</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LOOKUPSWITCH</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xab</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IRETURN</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xac</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>LRETURN</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xad</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>FRETURN</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xae</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>DRETURN</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xaf</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ARETURN</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xb0</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>RETURN</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xb1</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>GETSTATIC</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xb2</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>PUTSTATIC</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xb3</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>GETFIELD</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xb4</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>PUTFIELD</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xb5</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>INVOKEVIRTUAL</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xb6</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>INVOKESPECIAL</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xb7</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>INVOKESTATIC</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xb8</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>INVOKEINTERFACE</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xb9</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>INVOKEDYNAMIC</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xba</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>NEW</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xbb</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>NEWARRAY</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xbc</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ANEWARRAY</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xbd</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ARRAYLENGTH</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xbe</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>ATHROW</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xbf</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>CHECKCAST</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xc0</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>INSTANCEOF</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xc1</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>MONITORENTER</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xc2</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>MONITOREXIT</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xc3</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>WIDE</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xc4</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>MULTIANEWARRAY</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xc5</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IFNULL</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xc6</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IFNONNULL</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xc7</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>GOTO_W</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xc8</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>JSR_W</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xc9</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>BREAKPOINT</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xca</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IMPDEP1</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xfe</span>;
+    <span class='kw'>pub</span> <span class='kw'>const</span> <span class='ident'>IMPDEP2</span>: <span class='ident'>u8</span> <span class='op'>=</span> <span class='number'>0xff</span>;
+}
+</pre>
+</section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../../../";
+        window.currentCrate = "rust_jvm";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../../../jquery.js"></script>
+    <script src="../../../../main.js"></script>
+    
+    <script defer src="../../../../search-index.js"></script>
+</body>
+</html>

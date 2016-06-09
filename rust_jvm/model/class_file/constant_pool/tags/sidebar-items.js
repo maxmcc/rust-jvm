@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["CLASS",""],["DOUBLE",""],["FIELD_REF",""],["FLOAT",""],["INTEGER",""],["INTERFACE_METHOD_REF",""],["INVOKE_DYNAMIC",""],["LONG",""],["METHOD_HANDLE",""],["METHOD_REF",""],["METHOD_TYPE",""],["NAME_AND_TYPE",""],["STRING",""],["UTF_8",""]]});
