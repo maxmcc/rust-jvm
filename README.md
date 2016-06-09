@@ -4,9 +4,9 @@ This project was submitted by Meyer Kizner, Max McCarthy, and David Xu as our
 final project for [CIS 198](//cis198-2016s.github.io) at the University of
 Pennsylvania in spring 2016.
 
-Please note that because this project was completed for a course, it **not**
+Please note that because this project was completed for a course, it is **not**
 under active development. The code and documentation in this repository is
-provided as-is, and we will not be providing support beyond what already exists
+available as-is, and we will not be providing support beyond what already exists
 here.
 
 ## About
